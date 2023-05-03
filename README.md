@@ -9,7 +9,7 @@
 比如此处，我们设计一个HelloService
 
 ```java
-package com.tencent.rpc0.service;
+package com.github.rpc0.service;
 
 import io.vertx.core.Future;
 
@@ -30,9 +30,9 @@ public interface HelloService {
 ##### 第二步 添加对应接口的实现
 
 ```java
-package com.tencent.rpc0.service.impl;
+package com.github.rpc0.service.impl;
 
-import service.com.github.rpc0.HelloService;
+import com.github.rpc0.HelloService;
 import io.vertx.core.Future;
 
 /**
@@ -53,12 +53,12 @@ public final class HelloServiceImpl implements HelloService {
 ##### 第三步 构建一个Server实例并启动
 
 ```java
-package com.tencent.rpc0;
+package com.github.rpc0;
 
 import server.com.github.rpc0.Rpc0Server;
 import server.com.github.rpc0.Rpc0ServerBuilder;
 import service.com.github.rpc0.HelloService;
-import impl.service.com.github.rpc0.HelloServiceImpl;
+import com.github.rpc0.HelloServiceImpl;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServerOptions;
 import lombok.extern.slf4j.Slf4j;
@@ -94,11 +94,11 @@ public final class ExampleServer {
 ##### 第四步 客户端调用
 
 ```java
-package com.tencent.rpc0;
+package com.github.rpc0;
 
 import com.github.rpc0.client.ServiceFactory;
 import com.github.rpc0.client.ServiceFactoryBuilder;
-import service.com.github.rpc0.HelloService;
+import com.github.rpc0.HelloService;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClientOptions;
 
@@ -177,12 +177,12 @@ public final class ExampleClient {
 自定义类型需要显式进行注册，以下为一个例子：
 
 ```java
-package com.tencent.rpc0.model;
+package com.github.rpc0.model;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import annotation.com.github.rpc0.TrustedType;
+import com.github.rpc0.TrustedType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -253,7 +253,7 @@ public class User {
 Rpc0Server rpc0Server = new Rpc0ServerBuilder(vertx,
         new NetServerOptions().setHost(args[0])
         .setPort(Integer.parseInt(args[1])))
-        .registerTypes("com.tencent.rpc0.model",false) // 通过扫描包的方式进行注册
+        .registerTypes("com.github.rpc0.model",false) // 通过扫描包的方式进行注册
         .build();
 ```
 
