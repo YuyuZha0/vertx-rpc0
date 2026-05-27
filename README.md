@@ -9,6 +9,51 @@ A lightweight, high-performance Java RPC framework built on top of [Eclipse Vert
 - **Trusted-types-only.** A hardened `SafeKryo` rejects unregistered classes; user-defined payloads must be opted in with `@TrustedType` or a package scan.
 - **Small footprint.** Four small modules — `common`, `client`, `server`, `example` — with no transitive runtime surprises beyond Vert.x + Kryo + Guava.
 
+## Where this fits
+
+`vertx-rpc0` is intentionally narrow. It does serialization, transport, async
+request/response correlation, and connection lifecycle — and not much else.
+The features that older Java RPC stacks (e.g. Dubbo) build *into the
+application layer* — service discovery, load balancing, retries, mTLS,
+observability, circuit breakers — are deliberately omitted, on the
+assumption that they're now better handled in one of two places:
+
+- **Service governance → Kubernetes + a service mesh.** Discovery via
+  Service DNS, load balancing via `kube-proxy`, mTLS / retries / circuit
+  breaking / per-request tracing via the mesh data plane (Istio + Envoy,
+  Linkerd, …). None of that needs to live in the framework anymore. The
+  "fat framework, thin platform" answer that defined RPC frameworks
+  c. 2015 has flipped — the platform is now fat, and the framework should
+  be thin.
+- **L7 ergonomics and cross-language interop → use the tool built for
+  it.** Cross-language RPC: gRPC. Typed HTTP clients in Java: Retrofit or
+  OpenFeign. REST in Spring: `RestClient`. `vertx-rpc0` does not try to
+  reinvent any of these.
+
+What's left — and what this framework is actually *for* — is one niche:
+
+> **Java-async, hot-path, intra-cluster, trusted-network RPC** where
+> you want a Kryo-dense binary wire, full control over the data path,
+> and no Envoy sidecar between caller and callee.
+
+That niche is real but narrow. If any of the following are true, reach for
+something else:
+
+| Need | Use |
+|---|---|
+| Cross-language clients (Go, Python, Node…) | gRPC |
+| Public API or third-party callers | gRPC, or REST + OpenAPI |
+| L7 mesh routing / per-RPC tracing through Istio | gRPC (HTTP/2 is L7-parseable by Envoy; Kryo-over-TCP is not — `vertx-rpc0` through a sidecar reduces to L4 byte counting) |
+| Built-in discovery / LB / retries / circuit breakers | Dubbo, or run `vertx-rpc0` behind a mesh while accepting that mesh-level L7 features won't apply |
+| HTTP ergonomics in Java | Retrofit, OpenFeign, Spring `RestClient` |
+| Streaming / server-push / bidirectional | gRPC |
+
+The framework is ~80 source files. You can read it end-to-end in an
+afternoon and know exactly what's on the wire and what isn't — that's
+the design budget. The "rpc0" in the name reads literally: zero
+ceremony, zero discovery, zero L7, zero "what about my multi-language
+clients". Embrace the niche or pick a different tool.
+
 ## Requirements
 
 - **JDK 21** or later (uses `MethodHandles`, switch expressions, modern reflection).
@@ -124,6 +169,59 @@ public final class ExampleClient {
   }
 }
 ```
+
+## Multi-Verticle deployment
+
+Both builders expose a `buildSupplier()` overload that returns a
+`Supplier<Rpc0Server>` / `Supplier<ServiceFactory>` instead of a single
+instance. Pass it to `vertx.deployVerticle(supplier::get,
+DeploymentOptions.setInstances(N))` to scale horizontally across event loops.
+
+### Server
+
+N server verticles share one port via Vert.x's built-in port-sharing — Vert.x
+binds the underlying listening socket once and dispatches accepted
+connections round-robin across the deployed event loops.
+
+```java
+Supplier<Rpc0Server> serverSupplier = new Rpc0ServerBuilder(vertx,
+        new NetServerOptions().setHost("0.0.0.0").setPort(9549))
+        .addBinding(HelloService.class, new HelloServiceImpl())
+        .buildSupplier();
+
+vertx.deployVerticle(serverSupplier::get,
+        new DeploymentOptions().setInstances(4));
+```
+
+### Client
+
+Each client verticle should mint **its own** `ServiceFactory` inside its
+`start()` — that way the factory binds to that verticle's `Context` and
+opens its own connection. `buildSupplier()` snapshots the builder
+configuration immediately; `vertx.getOrCreateContext()` and
+`vertx.createNetClient(...)` are deferred until `supplier.get()` is called.
+
+```java
+Supplier<ServiceFactory> factorySupplier =
+        new ServiceFactoryBuilder(vertx, "rpc.svc.cluster.local", 9549)
+                .registerService(HelloService.class)
+                .buildSupplier();
+
+class MyClientVerticle extends AbstractVerticle {
+  private ServiceFactory factory;
+
+  @Override public void start() {
+    factory = factorySupplier.get();   // own context, own NetClient
+  }
+}
+
+vertx.deployVerticle(() -> new MyClientVerticle(factorySupplier),
+        new DeploymentOptions().setInstances(4));
+```
+
+`build()` still exists for the single-instance case and captures the
+calling thread's context eagerly; reach for `buildSupplier()` when you
+need multiple instances.
 
 ## Supported parameter and return types
 

@@ -5,18 +5,20 @@ import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.MutableClassToInstanceMap;
+import io.vertx.core.Vertx;
+import io.vertx.core.net.NetServerOptions;
 import io.vertxrpc0.conf.AbstractConfigurator;
 import io.vertxrpc0.conf.ConstructingProcess;
 import io.vertxrpc0.kryo.KryoFactory;
+import io.vertxrpc0.kryo.KryoRegistry;
 import io.vertxrpc0.transport.KryoMessageTransport;
 import io.vertxrpc0.transport.MessageTransport;
-import io.vertx.core.Vertx;
-import io.vertx.core.net.NetServerOptions;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * @author fishzhao
@@ -28,7 +30,7 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
   private final ClassToInstanceMap<Object> registry = MutableClassToInstanceMap.create();
   private final Vertx vertx;
   private final NetServerOptions netServerOptions;
-  private Duration keepAliveDuration = Duration.ofMinutes(2); // 如果连接五分钟未活动则关闭
+  private Duration keepAliveDuration = Duration.ofMinutes(2);
 
   public Rpc0ServerBuilder(@NonNull Vertx vertx,
                            @NonNull NetServerOptions netServerOptions,
@@ -42,22 +44,47 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
     this(vertx, netServerOptions, Vertx.class.getClassLoader());
   }
 
+  /**
+   * Builds a single {@link Rpc0Server} instance. Equivalent to
+   * {@code buildSupplier().get()}.
+   */
   @Override
   public Rpc0Server build() {
+    return buildSupplier().get();
+  }
+
+  /**
+   * Returns a {@link Supplier} that mints a fresh {@link Rpc0Server} per call.
+   *
+   * <p>Use this when deploying multiple server instances behind one port:
+   * <pre>
+   * Supplier&lt;Rpc0Server&gt; supplier = builder.buildSupplier();
+   * vertx.deployVerticle(supplier::get, new DeploymentOptions().setInstances(4));
+   * </pre>
+   *
+   * <p>The builder's current configuration is snapshotted at the time this method
+   * is called — subsequent mutations to the builder (additional {@code addBinding}
+   * / {@code setKeepAliveDuration} calls) do not affect the returned supplier.
+   * The empty-registry check is performed eagerly here, not at supplier-invocation
+   * time, so misconfiguration surfaces at the build call site.
+   */
+  public Supplier<Rpc0Server> buildSupplier() {
     Preconditions.checkArgument(!registry.isEmpty(), "No service has been registered!");
     Map<String, Object> classNameInstanceMap = Maps.newHashMapWithExpectedSize(registry.size());
     for (Map.Entry<Class<?>, Object> entry : registry.entrySet()) {
-      classNameInstanceMap.put(
-              entry.getKey().getTypeName(),
-              entry.getValue()
-      );
+      classNameInstanceMap.put(entry.getKey().getTypeName(), entry.getValue());
     }
-    ServiceLookup serviceLookup = new ServiceLookup(ImmutableMap.copyOf(classNameInstanceMap));
-    MessageTransport messageTransport = new KryoMessageTransport(new KryoFactory(getClassLoader(), getKryoRegistry()));
-    return new Rpc0Server(serviceLookup,
-            messageTransport,
-            netServerOptions,
-            keepAliveDuration);
+    ImmutableMap<String, Object> services = ImmutableMap.copyOf(classNameInstanceMap);
+    ClassLoader cl = getClassLoader();
+    KryoRegistry kryoRegistry = getKryoRegistry();
+    NetServerOptions opts = netServerOptions;
+    Duration keepAlive = keepAliveDuration;
+
+    return () -> {
+      ServiceLookup lookup = new ServiceLookup(services);
+      MessageTransport transport = new KryoMessageTransport(new KryoFactory(cl, kryoRegistry));
+      return new Rpc0Server(lookup, transport, opts, keepAlive);
+    };
   }
 
   public Rpc0ServerBuilder setKeepAliveDuration(@NonNull Duration keepAliveDuration) {
