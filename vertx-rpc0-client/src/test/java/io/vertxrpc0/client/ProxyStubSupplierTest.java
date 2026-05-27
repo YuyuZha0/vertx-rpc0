@@ -7,16 +7,15 @@ import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
+import io.vertx.junit5.Timeout;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.transport.KryoMessageTransport;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,33 +23,27 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
-@Timeout(value = 10, unit = TimeUnit.SECONDS)
+@ExtendWith(VertxExtension.class)
+@Timeout(value = 10, timeUnit = TimeUnit.SECONDS)
 public class ProxyStubSupplierTest {
 
-  private Vertx vertx;
-  private ContextInternal context;
-  private KryoMessageTransport transport;
-
-  @BeforeEach
-  public void setUp() {
-    vertx = Vertx.vertx();
-    context = (ContextInternal) vertx.getOrCreateContext();
-    transport = new KryoMessageTransport(new KryoFactory());
+  private static KryoMessageTransport transport() {
+    return new KryoMessageTransport(new KryoFactory());
   }
 
-  @AfterEach
-  public void tearDown() throws Exception {
-    vertx.close().toCompletionStage().toCompletableFuture().get(5, TimeUnit.SECONDS);
+  private static ContextInternal contextOf(Vertx vertx) {
+    return (ContextInternal) vertx.getOrCreateContext();
   }
 
-  private static <T> T await(Future<T> f) throws Exception {
-    return f.toCompletionStage().toCompletableFuture().get(5, TimeUnit.SECONDS);
-  }
+  // ---------------------------------------------------------------------------
+  // Sync construction-validation tests (no Vertx event loop work).
+  // ---------------------------------------------------------------------------
 
   @Test
-  public void constructorRejectsNonPositiveInitialBackoff() {
+  public void constructorRejectsNonPositiveInitialBackoff(Vertx vertx) {
+    ContextInternal context = contextOf(vertx);
+    KryoMessageTransport transport = transport();
     assertThrows(IllegalArgumentException.class, () -> new ProxyStubSupplier(
             context, vertx.createNetClient(), transport, Duration.ofSeconds(1), "localhost", 1,
             Duration.ZERO, Duration.ofSeconds(1)));
@@ -60,114 +53,18 @@ public class ProxyStubSupplierTest {
   }
 
   @Test
-  public void constructorRejectsMaxBackoffSmallerThanInitial() {
+  public void constructorRejectsMaxBackoffSmallerThanInitial(Vertx vertx) {
     assertThrows(IllegalArgumentException.class, () -> new ProxyStubSupplier(
-            context, vertx.createNetClient(), transport, Duration.ofSeconds(1), "localhost", 1,
+            contextOf(vertx), vertx.createNetClient(), transport(),
+            Duration.ofSeconds(1), "localhost", 1,
             Duration.ofSeconds(5), Duration.ofSeconds(1)));
   }
 
+  /** Pure backoff-math test — reflection on a private method, no event loop interaction. */
   @Test
-  public void concurrentGetsShareTheSameInflightConnect() throws Exception {
-    // No server listening — connects will fail. We just need the same failed future shared.
-    int unreachablePort = unreachablePort();
+  public void backoffGrowsExponentiallyThenCaps(Vertx vertx) throws Exception {
     ProxyStubSupplier supplier = new ProxyStubSupplier(
-            context, vertx.createNetClient(new NetClientOptions().setConnectTimeout(200)),
-            transport, Duration.ofSeconds(1), "127.0.0.1", unreachablePort,
-            Duration.ofMillis(200), Duration.ofSeconds(1));
-
-    Future<ProxyStub> f1 = supplier.get();
-    Future<ProxyStub> f2 = supplier.get();
-    Future<ProxyStub> f3 = supplier.get();
-
-    // All three calls return promises that resolve to the same underlying connect outcome.
-    try {
-      await(f1);
-      fail("expected failure");
-    } catch (ExecutionException expected) {
-      // ok
-    }
-    // f2 and f3 must complete with the same failure mode.
-    assertTrue(f2.failed());
-    assertTrue(f3.failed());
-
-    closeSupplier(supplier);
-  }
-
-  @Test
-  public void failedConnectsAreCachedDuringBackoffWindow() throws Exception {
-    int unreachablePort = unreachablePort();
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
-            context, vertx.createNetClient(new NetClientOptions().setConnectTimeout(200)),
-            transport, Duration.ofSeconds(1), "127.0.0.1", unreachablePort,
-            Duration.ofSeconds(5), Duration.ofSeconds(5));
-
-    Future<ProxyStub> first = supplier.get();
-    try {
-      await(first);
-      fail("expected first connect to fail");
-    } catch (ExecutionException expected) {
-      // ok
-    }
-
-    // Within the 5s backoff window, .get() should return the same cached failed future
-    // — no new connect attempt.
-    Future<ProxyStub> second = supplier.get();
-    assertSame(first, second, "concurrent .get() within backoff must return the cached future");
-    assertTrue(second.failed());
-
-    closeSupplier(supplier);
-  }
-
-  @Test
-  public void successfulConnectIsCachedAndReused() throws Exception {
-    NetServer accept = vertx.createNetServer(new NetServerOptions().setHost("127.0.0.1").setPort(0));
-    accept.connectHandler(sock -> { /* hold the connection open */ });
-    NetServer listening = await(accept.listen());
-
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
-            context, vertx.createNetClient(), transport,
-            Duration.ofSeconds(1), "127.0.0.1", listening.actualPort());
-
-    ProxyStub stub1 = await(supplier.get());
-    ProxyStub stub2 = await(supplier.get());
-    assertNotNull(stub1);
-    assertSame(stub1, stub2);
-
-    closeSupplier(supplier);
-    listening.close().toCompletionStage().toCompletableFuture().get(2, TimeUnit.SECONDS);
-  }
-
-  @Test
-  public void getAfterCloseFailsImmediately() throws Exception {
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
-            context, vertx.createNetClient(), transport,
-            Duration.ofSeconds(1), "127.0.0.1", 1);
-    closeSupplier(supplier);
-
-    Future<ProxyStub> f = supplier.get();
-    assertTrue(f.failed());
-    assertEquals("Connection unavailable for already closed!", f.cause().getMessage());
-  }
-
-  @Test
-  public void closeTwiceFailsTheSecondCall() throws Exception {
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
-            context, vertx.createNetClient(), transport,
-            Duration.ofSeconds(1), "127.0.0.1", 1);
-    Promise<Void> first = Promise.promise();
-    supplier.close(first);
-    await(first.future());
-
-    Promise<Void> second = Promise.promise();
-    supplier.close(second);
-    assertTrue(second.future().failed());
-  }
-
-  @Test
-  public void backoffGrowsExponentiallyThenCaps() throws Exception {
-    // Indirectly verify via the package-private computeBackoffMillis through reflection.
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
-            context, vertx.createNetClient(), transport,
+            contextOf(vertx), vertx.createNetClient(), transport(),
             Duration.ofSeconds(1), "127.0.0.1", 1,
             Duration.ofMillis(100), Duration.ofSeconds(2));
 
@@ -182,23 +79,107 @@ public class ProxyStubSupplierTest {
     assertEquals(2000L, m.invoke(supplier, 6));   // capped
     assertEquals(2000L, m.invoke(supplier, 100)); // still capped
     assertEquals(2000L, m.invoke(supplier, 64));  // no overflow at large shift counts
+  }
 
-    closeSupplier(supplier);
+  // ---------------------------------------------------------------------------
+  // Async tests driven through VertxTestContext.
+  // ---------------------------------------------------------------------------
+
+  @Test
+  public void concurrentGetsShareTheSameInflightConnect(Vertx vertx, VertxTestContext ctx) {
+    ProxyStubSupplier supplier = new ProxyStubSupplier(
+            contextOf(vertx),
+            vertx.createNetClient(new NetClientOptions().setConnectTimeout(200)),
+            transport(), Duration.ofSeconds(1), "127.0.0.1", unreachablePort(),
+            Duration.ofMillis(200), Duration.ofSeconds(1));
+
+    Future<ProxyStub> f1 = supplier.get();
+    Future<ProxyStub> f2 = supplier.get();
+    Future<ProxyStub> f3 = supplier.get();
+
+    // Wait for ALL three to complete (regardless of outcome) before asserting:
+    // f1's own onComplete handler fires before the supplier's internal forwarders to
+    // f2/f3, so asserting inside f1.onComplete would race.
+    io.vertx.core.CompositeFuture.join(f1, f2, f3).onComplete(ar -> ctx.verify(() -> {
+      assertTrue(f1.failed());
+      assertTrue(f2.failed());
+      assertTrue(f3.failed());
+      ctx.completeNow();
+    }));
+  }
+
+  @Test
+  public void failedConnectsAreCachedDuringBackoffWindow(Vertx vertx, VertxTestContext ctx) {
+    ProxyStubSupplier supplier = new ProxyStubSupplier(
+            contextOf(vertx),
+            vertx.createNetClient(new NetClientOptions().setConnectTimeout(200)),
+            transport(), Duration.ofSeconds(1), "127.0.0.1", unreachablePort(),
+            Duration.ofSeconds(5), Duration.ofSeconds(5));
+
+    Future<ProxyStub> first = supplier.get();
+    first.onComplete(ctx.failing(cause -> ctx.verify(() -> {
+      // Within the 5s backoff window, .get() must return the same cached failed future.
+      Future<ProxyStub> second = supplier.get();
+      assertSame(first, second,
+              "concurrent .get() within backoff must return the cached future");
+      assertTrue(second.failed());
+      ctx.completeNow();
+    })));
+  }
+
+  @Test
+  public void successfulConnectIsCachedAndReused(Vertx vertx, VertxTestContext ctx) {
+    NetServer accept = vertx.createNetServer(
+            new NetServerOptions().setHost("127.0.0.1").setPort(0));
+    accept.connectHandler(sock -> { /* hold the connection open */ });
+
+    accept.listen().onComplete(ctx.succeeding(listening -> {
+      ProxyStubSupplier supplier = new ProxyStubSupplier(
+              contextOf(vertx), vertx.createNetClient(), transport(),
+              Duration.ofSeconds(1), "127.0.0.1", listening.actualPort());
+
+      supplier.get().onComplete(ctx.succeeding(stub1 -> ctx.verify(() -> {
+        assertNotNull(stub1);
+        supplier.get().onComplete(ctx.succeeding(stub2 -> ctx.verify(() -> {
+          assertSame(stub1, stub2);
+          ctx.completeNow();
+        })));
+      })));
+    }));
+  }
+
+  @Test
+  public void getAfterCloseFailsImmediately(Vertx vertx, VertxTestContext ctx) {
+    ProxyStubSupplier supplier = new ProxyStubSupplier(
+            contextOf(vertx), vertx.createNetClient(), transport(),
+            Duration.ofSeconds(1), "127.0.0.1", 1);
+    Promise<Void> closed = Promise.promise();
+    supplier.close(closed);
+    closed.future().onComplete(ctx.succeeding(v -> ctx.verify(() -> {
+      Future<ProxyStub> f = supplier.get();
+      assertTrue(f.failed());
+      assertEquals("Connection unavailable for already closed!", f.cause().getMessage());
+      ctx.completeNow();
+    })));
+  }
+
+  @Test
+  public void closeTwiceFailsTheSecondCall(Vertx vertx, VertxTestContext ctx) {
+    ProxyStubSupplier supplier = new ProxyStubSupplier(
+            contextOf(vertx), vertx.createNetClient(), transport(),
+            Duration.ofSeconds(1), "127.0.0.1", 1);
+    Promise<Void> first = Promise.promise();
+    supplier.close(first);
+    first.future().onComplete(ctx.succeeding(v -> {
+      Promise<Void> second = Promise.promise();
+      supplier.close(second);
+      ctx.verify(() -> assertTrue(second.future().failed()));
+      ctx.completeNow();
+    }));
   }
 
   private static int unreachablePort() {
     // 1 is a privileged + closed port on every loopback we'll see in CI/dev.
     return 1;
-  }
-
-  private static void closeSupplier(ProxyStubSupplier supplier) throws Exception {
-    Promise<Void> p = Promise.promise();
-    supplier.close(p);
-    CompletableFuture<Void> cf = p.future().toCompletionStage().toCompletableFuture();
-    try {
-      cf.get(2, TimeUnit.SECONDS);
-    } catch (ExecutionException ignored) {
-      // Even a failed close is fine for cleanup.
-    }
   }
 }

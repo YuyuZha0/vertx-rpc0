@@ -43,8 +43,13 @@ public final class Rpc0TestHarness {
     this.deploymentId = deploymentId;
   }
 
-  public static Rpc0TestHarness start(boolean ssl) throws Exception {
-    Vertx vertx = Vertx.vertx();
+  /**
+   * Bootstraps the server + client factory on the supplied {@link Vertx}.
+   * The caller owns the Vertx lifecycle (typically provided by
+   * {@code @ExtendWith(VertxExtension.class)}); {@link #close()} only undeploys
+   * the server verticle and closes the factory.
+   */
+  public static Rpc0TestHarness start(Vertx vertx, boolean ssl) throws Exception {
     ObjectMapper objectMapper = new ObjectMapperSupplier().get();
     SelfSignedCertificate certificate = ssl ? SelfSignedCertificate.create() : null;
 
@@ -137,9 +142,12 @@ public final class Rpc0TestHarness {
     return port;
   }
 
-  public void close() throws Exception {
-    CountDownLatch latch = new CountDownLatch(1);
-    vertx.undeploy(deploymentId).onComplete(ar -> vertx.close().onComplete(v -> latch.countDown()));
-    latch.await(5, TimeUnit.SECONDS);
+  /**
+   * Returns a {@link io.vertx.core.Future} that completes once the server
+   * verticle is undeployed. Does <strong>not</strong> close the {@link Vertx}
+   * — that's the caller's responsibility.
+   */
+  public io.vertx.core.Future<Void> close() {
+    return vertx.undeploy(deploymentId);
   }
 }

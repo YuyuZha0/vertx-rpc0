@@ -2,9 +2,10 @@ package io.vertxrpc0.client;
 
 import com.google.common.collect.ImmutableSet;
 import io.vertx.core.Vertx;
-import org.junit.jupiter.api.AfterEach;
+import io.vertx.junit5.VertxExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import java.util.HashSet;
@@ -20,27 +21,21 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(VertxExtension.class)
 public class ServiceFactoryTest {
 
   interface ServiceA {}
   interface ServiceB {}
 
-  private Vertx vertx;
   private ProxyStubSupplier supplier;
 
   @BeforeEach
   public void setUp() {
-    vertx = Vertx.vertx();
     supplier = Mockito.mock(ProxyStubSupplier.class);
   }
 
-  @AfterEach
-  public void tearDown() throws Exception {
-    vertx.close().toCompletionStage().toCompletableFuture().get();
-  }
-
   @Test
-  public void createForRegisteredInterfaceReturnsProxy() {
+  public void createForRegisteredInterfaceReturnsProxy(Vertx vertx) {
     ServiceFactory factory = new ServiceFactory(ImmutableSet.of(ServiceA.class), vertx, supplier);
     ServiceA proxy = factory.create(ServiceA.class);
     assertNotNull(proxy);
@@ -48,13 +43,13 @@ public class ServiceFactoryTest {
   }
 
   @Test
-  public void createForUnregisteredInterfaceRejected() {
+  public void createForUnregisteredInterfaceRejected(Vertx vertx) {
     ServiceFactory factory = new ServiceFactory(ImmutableSet.of(ServiceA.class), vertx, supplier);
     assertThrows(IllegalArgumentException.class, () -> factory.create(ServiceB.class));
   }
 
   @Test
-  public void getOrCreateCachesProxyInstance() {
+  public void getOrCreateCachesProxyInstance(Vertx vertx) {
     ServiceFactory factory = new ServiceFactory(ImmutableSet.of(ServiceA.class), vertx, supplier);
     ServiceA first = factory.getOrCreate(ServiceA.class);
     ServiceA second = factory.getOrCreate(ServiceA.class);
@@ -62,7 +57,7 @@ public class ServiceFactoryTest {
   }
 
   @Test
-  public void getOrCreateIsThreadSafe() throws Exception {
+  public void getOrCreateIsThreadSafe(Vertx vertx) throws Exception {
     ServiceFactory factory = new ServiceFactory(ImmutableSet.of(ServiceA.class), vertx, supplier);
     int threads = 32;
     ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -89,7 +84,7 @@ public class ServiceFactoryTest {
   }
 
   @Test
-  public void closeClearsCacheAndPropagatesToSupplier() throws Exception {
+  public void closeClearsCacheAndPropagatesToSupplier(Vertx vertx) throws Exception {
     Set<Class<?>> registry = new HashSet<>();
     registry.add(ServiceA.class);
     ServiceFactory factory = new ServiceFactory(ImmutableSet.copyOf(registry), vertx, supplier);
