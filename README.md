@@ -1,44 +1,60 @@
-## [零]  A better java rpc framework solution
+# vertx-rpc0
 
-`vertx-rpc0`是一个轻量级的高性能rpc框架解决方案，底层基于vertx+kryo，可以用来方便地构建高性能网络应用
+A lightweight, high-performance Java RPC framework built on top of [Eclipse Vert.x](https://vertx.io) and [Kryo](https://github.com/EsotericSoftware/kryo). It lets you expose plain Java interfaces over the network and call them remotely as if they were local — with strict, opt-in type registration as a defense against deserialization attacks.
 
-### Quickstart
+## Why vertx-rpc0
 
-#### 第一步 设计一个接口
+- **Async by design.** Service methods return `io.vertx.core.Future<T>`, so the entire request lifecycle fits the Vert.x event-loop model with no blocking.
+- **Fast wire format.** Kryo with custom serializers for collections, maps, immutable Guava types, `MethodType`, ASCII strings, and Vert.x `Buffer`.
+- **Trusted-types-only.** A hardened `SafeKryo` rejects unregistered classes; user-defined payloads must be opted in with `@TrustedType` or a package scan.
+- **Small footprint.** Four small modules — `common`, `client`, `server`, `example` — with no transitive runtime surprises beyond Vert.x + Kryo + Guava.
 
-比如此处，我们设计一个HelloService
+## Requirements
+
+- **JDK 21** or later (uses `MethodHandles`, switch expressions, modern reflection).
+- **Maven 3.6+** to build.
+
+## Coordinates
+
+```xml
+<dependency>
+  <groupId>io.vertxrpc0</groupId>
+  <artifactId>vertx-rpc0-server</artifactId>
+  <version>1.0.0</version>
+</dependency>
+
+<dependency>
+  <groupId>io.vertxrpc0</groupId>
+  <artifactId>vertx-rpc0-client</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
+
+## Quickstart
+
+### 1. Define a service interface
+
+Every method must return `io.vertx.core.Future<T>`.
 
 ```java
-package com.github.rpc0.service;
+package io.vertxrpc0.service;
 
 import io.vertx.core.Future;
 
-/**
- * @author fishzhao
- * @since 2022-01-25
- */
 public interface HelloService {
 
   Future<String> sayHello(String name);
 }
-
 ```
 
-*注意， 所有接口方法的返回类型必须是`io.vertx.core.Future`*
-对于方法参数和返回值， rpc内部提供了绝大多数Java常用类型的支持，但对于自定义类型，仍然需要手动进行注册，详情可以参考文档后面的部分。
-
-##### 第二步 添加对应接口的实现
+### 2. Implement the interface
 
 ```java
-package com.github.rpc0.service.impl;
+package io.vertxrpc0.service.impl;
 
-import com.github.rpc0.HelloService;
 import io.vertx.core.Future;
+import io.vertxrpc0.service.HelloService;
 
-/**
- * @author fishzhao
- * @since 2022-01-25
- */
 public final class HelloServiceImpl implements HelloService {
 
   @Override
@@ -48,68 +64,47 @@ public final class HelloServiceImpl implements HelloService {
 }
 ```
 
-此处新增一个实现了接口中对应方法的的对象，方法可能被多线程调用，需要编写者自行解决线程安全问题。 编写的方法需要符合Vert.x的约定，即避免阻塞EventLoop。
+Method bodies run on the Vert.x event loop — don't block. The framework does not synchronize calls, so any shared mutable state inside an implementation is your responsibility.
 
-##### 第三步 构建一个Server实例并启动
+### 3. Start a server
 
 ```java
-package com.github.rpc0;
+package io.vertxrpc0;
 
-import server.com.github.rpc0.Rpc0Server;
-import server.com.github.rpc0.Rpc0ServerBuilder;
-import service.com.github.rpc0.HelloService;
-import com.github.rpc0.HelloServiceImpl;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServerOptions;
-import lombok.extern.slf4j.Slf4j;
+import io.vertxrpc0.server.Rpc0Server;
+import io.vertxrpc0.server.Rpc0ServerBuilder;
+import io.vertxrpc0.service.HelloService;
+import io.vertxrpc0.service.impl.HelloServiceImpl;
 
-import java.util.Arrays;
-
-/**
- * @author fishzhao
- * @since 2022-01-20
- */
-@Slf4j
 public final class ExampleServer {
 
   public static void main(String[] args) {
     Vertx vertx = Vertx.vertx();
-    Rpc0Server rpc0Server = new Rpc0ServerBuilder(vertx, new NetServerOptions().setHost(args[0]).setPort(Integer.parseInt(args[1])))
+    Rpc0Server server = new Rpc0ServerBuilder(
+            vertx,
+            new NetServerOptions().setHost(args[0]).setPort(Integer.parseInt(args[1])))
             .addBinding(HelloService.class, new HelloServiceImpl())
             .build();
-    vertx.deployVerticle(rpc0Server)
-            .onComplete(result -> {
-              if (result.succeeded()) {
-                log.info("Listening on: {}", Arrays.toString(args));
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> vertx.undeploy(result.result())));
-              } else {
-                log.error("Launch server with exception: ", result.cause());
-              }
-            });
+    vertx.deployVerticle(server);
   }
 }
-
 ```
 
-##### 第四步 客户端调用
+### 4. Call from a client
 
 ```java
-package com.github.rpc0;
+package io.vertxrpc0;
 
-import com.github.rpc0.client.ServiceFactory;
-import com.github.rpc0.client.ServiceFactoryBuilder;
-import com.github.rpc0.HelloService;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClientOptions;
+import io.vertxrpc0.client.ServiceFactory;
+import io.vertxrpc0.client.ServiceFactoryBuilder;
+import io.vertxrpc0.service.HelloService;
 
 import java.time.Duration;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * @author fishzhao
- * @since 2022-01-20
- */
 public final class ExampleClient {
 
   public static void main(String[] args) {
@@ -117,147 +112,110 @@ public final class ExampleClient {
     ServiceFactory factory = new ServiceFactoryBuilder(
             vertx, "127.0.0.1", 9549,
             new NetClientOptions(),
-            Duration.ofSeconds(3), Vertx.class.getClassLoader())
+            Duration.ofSeconds(3),
+            Vertx.class.getClassLoader())
             .registerService(HelloService.class)
             .build();
-    AtomicBoolean stopped = new AtomicBoolean(false);
+
     HelloService helloService = factory.create(HelloService.class);
-    vertx.setPeriodic(1000, timeId -> {
-      if (stopped.get()) {
-        vertx.cancelTimer(timeId);
-        return;
-      }
-      String s = UUID.randomUUID().toString();
-      long start = System.currentTimeMillis();
-      helloService.sayHello(s)
-              .onComplete(result -> {
-                if (result.succeeded()) {
-                  System.out.printf("%s => %s: %dms%n", s, result.result(), System.currentTimeMillis() - start);
-                } else {
-                  result.cause().printStackTrace();
-                }
-              });
-    });
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> stopped.set(true)));
+    helloService.sayHello("world")
+            .onSuccess(reply -> System.out.println(reply))
+            .onFailure(Throwable::printStackTrace);
   }
 }
-
-
 ```
 
-#### 支持的类型
+## Supported parameter and return types
 
-##### 值类型
+### Value types
 
-默认支持所有的基本类型、基本类型的数组以及下面的对象类型或其对应的数组：
-`java.lang.Byte`, `java.lang.Boolean`, `java.lang.Character`, `java.lang.Short`, `java.lang.Integer`, `java.lang.Float`
-, `java.lang.Double`, `java.lang.String`, `java.util.BitSet`, `java.net.URL`, `java.nio.charset.Charset`
-, `java.util.Currency`, `java.math.BigInteger`, `java.math.BigDecimal`, `java.util.Date`, `java.util.Calendar`
-, `java.util.TimeZone`, `java.time.LocalDate`, `java.time.LocalTime`, `java.time.LocalDateTime`
-, `java.time.OffsetDateTime`, `java.time.ZonedDateTime`, `java.time.Duration`, `java.time.ZoneId`, `java.time.Instant`
+All primitives, their boxed wrappers, primitive arrays, and the following references (plus their `T[]` array forms):
 
-#### 集合类型
+`Byte`, `Boolean`, `Character`, `Short`, `Integer`, `Float`, `Double`, `String`, `BitSet`, `URL`, `Charset`, `Currency`, `BigInteger`, `BigDecimal`, `Date`, `Calendar`, `TimeZone`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetDateTime`, `ZonedDateTime`, `Duration`, `ZoneId`, `Instant`, `io.netty.util.AsciiString`, `io.vertx.core.buffer.Buffer`.
 
-集合类型建议声明（如方法签名、类型参数或字段属性）为接口类型，支持的接口类型如下：
-`java.util.List`, `java.util.Set`, `java.util.SortedSet`, `java.util.Queue`, `java.util.Deque`, `java.util.Collection`
-对于每种接口类型，rpc框架内部提供了默认的绑定实现，这样能保证最大程度的兼容性，当然，某些特定的场景下需要指定实现类型，目前支持以下类型的绑定：
-`java.util.ArrayList`, `java.util.LinkedHashSet`, `java.util.HashSet`, `java.util.TreeSet`, `java.util.ArrayDeque`
-, `java.util.PriorityQueue`
-对于所有上述类型以外的类型，调用过程中会抛出异常
+### Collections
 
-#### 字典类型
+Declare parameters and return types using one of these interfaces — the framework picks the right serializer automatically:
 
-同集合类型，建议将Map声明为以下类型：
-`java.util.Map`, `java.util.SortedMap`
-同时支持以下类型的实现：
-`java.util.HashMap`, `java.util.LinkedHashMap`, `java.util.TreeMap`, `java.util.Properties`
+`List`, `Set`, `SortedSet`, `Queue`, `Deque`, `Collection`, plus Guava's `ImmutableCollection` family.
 
-#### 自定义类型
+If you need a specific implementation, the following concrete classes are pre-registered: `ArrayList`, `LinkedList`, `LinkedHashSet`, `HashSet`, `TreeSet`, `ArrayDeque`, `PriorityQueue`. Anything outside this list throws on send.
 
-自定义类型需要显式进行注册，以下为一个例子：
+### Maps
+
+Declared interface: `Map`, `SortedMap`, or Guava's `ImmutableMap`. Pre-registered implementations: `HashMap`, `LinkedHashMap`, `TreeMap`, `Properties`.
+
+### Custom types
+
+Annotate the class with `@TrustedType(typeId = N)` and either register it explicitly or expose it via a package scan. The `typeId` must be unique within a registry.
 
 ```java
-package com.github.rpc0.model;
+package io.vertxrpc0.model;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.github.rpc0.TrustedType;
-import lombok.Getter;
-import lombok.Setter;
+import io.vertxrpc0.annotation.TrustedType;
+import lombok.Data;
 
-import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
 
-/**
- * @author fishzhao
- * @since 2022-01-17
- */
-@Getter
-@Setter
+@Data
 @TrustedType(typeId = 1)
 public class User {
-
   private long id;
   private String name;
   private OffsetDateTime createTime;
   private List<String> tags;
-  private int[] ints;
   private Map<String, Object> attributes;
-  private Object[] objects;
-
-  @Override
-  public String toString() {
-    return MoreObjects.toStringHelper(this)
-            .omitNullValues()
-            .add("id", id)
-            .add("name", name)
-            .add("createTime", createTime)
-            .add("tags", tags)
-            .add("ints", ints)
-            .add("attributes", attributes)
-            .add("objects", objects)
-            .toString();
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    User user = (User) o;
-    return id == user.id && Objects.equals(name, user.name) && Objects.equals(createTime, user.createTime) && Objects.equals(tags, user.tags) && Arrays.equals(ints, user.ints) && Objects.equals(attributes, user.attributes) && Arrays.equals(objects, user.objects);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(id, name, createTime, tags, attributes);
-    result = 31 * result + Arrays.hashCode(ints);
-    result = 31 * result + Arrays.hashCode(objects);
-    return result;
-  }
 }
-
 ```
 
-对于每一个实体，必须通过`@TrustedType(typeId = ${typeId})`显式指明唯一的typeId，并在初始化过程中，显式对其进行注册 或者自定义实现KryoRegistry接口来注册自定义类型
-**注意：两者不可同时使用**
+Register it on **both** sides — server and client — before `build()`:
 
 ```java
-Rpc0Server rpc0Server = new Rpc0ServerBuilder(vertx,
-        new NetServerOptions().setHost(args[0])
-        .setPort(Integer.parseInt(args[1])))
-        .registerTypes("com.github.rpc0.model",false) // 通过扫描包的方式进行注册
-        .build();
+// Scan a whole package
+builder.registerTypes("io.vertxrpc0.model", false);
+
+// Or register an individual class
+builder.registerType(User.class);
 ```
 
-#### SSL/TLS支持
+A custom `KryoRegistry` can be supplied instead of `registerTypes` / `registerType`, but the two approaches are mutually exclusive on a single builder.
 
-`vertx-rpc0`
-可以通过Vert.x原生的机制支持消息加密，配置过程参考：[https://vertx.io/docs/vertx-core/java/#ssl](https://vertx.io/docs/vertx-core/java/#ssl)
+## SSL/TLS
+
+Vert.x's native TLS support is used unchanged. Pass standard `NetServerOptions` / `NetClientOptions` with `setSsl(true)` and the desired `KeyCertOptions` / `TrustOptions`. See the Vert.x documentation: https://vertx.io/docs/vertx-core/java/#ssl
+
+For local testing against a `SelfSignedCertificate`, set `setHostnameVerificationAlgorithm("")` on the client options to skip hostname verification.
+
+## Building and testing
+
+```sh
+mvn clean verify
+```
+
+Runs all unit and integration tests across the four modules and generates per-module JaCoCo coverage reports at:
+
+```
+vertx-rpc0-{common,client,server,example}/target/site/jacoco/index.html
+```
+
+To launch the bundled example end-to-end:
+
+```sh
+mvn -pl vertx-rpc0-example -am package
+java -jar vertx-rpc0-example/target/vertx-rpc0-example-1.0.0.jar 127.0.0.1 9549
+```
+
+## Module layout
+
+| Module | What's inside |
+|---|---|
+| `vertx-rpc0-common` | Wire transport, Kryo factory + safe registry, custom serializers, configurator base class |
+| `vertx-rpc0-client` | `ServiceFactory`, dynamic-proxy invocation handler, connection-pooled `ProxyStub` |
+| `vertx-rpc0-server` | `Rpc0Server` verticle, per-connection `ServiceInvoker`, `ServiceLookup` |
+| `vertx-rpc0-example` | Sample services, an `ExampleServer` / `ExampleClient` runnable pair, and the end-to-end test suite |
+
+## License
+
+MIT (see source headers for any third-party portions).
