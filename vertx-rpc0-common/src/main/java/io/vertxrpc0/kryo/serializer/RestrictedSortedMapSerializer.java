@@ -4,10 +4,9 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
-import lombok.NonNull;
-
 import java.util.Comparator;
 import java.util.SortedMap;
+import lombok.NonNull;
 
 /**
  * @author fishzhao

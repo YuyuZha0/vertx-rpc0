@@ -1,24 +1,16 @@
 package io.vertxrpc0.kryo;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.util.IntMap;
 import io.vertxrpc0.annotation.TrustedType;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 public class TrustedTypeKryoRegistryTest {
-
-  @TrustedType(typeId = 5)
-  public static final class TypeA {
-  }
-
-  @TrustedType(typeId = 7)
-  public static final class TypeB {
-  }
 
   @Test
   public void emptyMapIsNoOp() {
@@ -57,5 +49,13 @@ public class TrustedTypeKryoRegistryTest {
   @Test
   public void constructorRejectsNullMap() {
     assertThrows(NullPointerException.class, () -> new TrustedTypeKryoRegistry(null));
+  }
+
+  @TrustedType(typeId = 5)
+  public static final class TypeA {
+  }
+
+  @TrustedType(typeId = 7)
+  public static final class TypeB {
   }
 }

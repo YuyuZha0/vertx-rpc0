@@ -1,11 +1,11 @@
 package io.vertxrpc0.reflection;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+
 import com.esotericsoftware.kryo.Kryo;
 import io.vertxrpc0.model.User;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 public class FieldAccessTest {
 

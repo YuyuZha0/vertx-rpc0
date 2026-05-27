@@ -3,11 +3,10 @@ package io.vertxrpc0.kryo.serializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
-import lombok.NonNull;
-
 import java.lang.reflect.Constructor;
 import java.util.Comparator;
 import java.util.function.Function;
+import lombok.NonNull;
 
 /**
  * @author fishzhao

@@ -1,13 +1,13 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.esotericsoftware.kryo.Kryo;
 import io.netty.util.AsciiString;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.testutil.KryoRoundtrip;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class AsciiStringSerializerTest {
 

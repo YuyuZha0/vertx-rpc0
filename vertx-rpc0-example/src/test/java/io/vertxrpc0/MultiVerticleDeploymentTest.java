@@ -1,5 +1,8 @@
 package io.vertxrpc0;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
@@ -14,9 +17,6 @@ import io.vertxrpc0.client.ServiceFactoryBuilder;
 import io.vertxrpc0.server.Rpc0Server;
 import io.vertxrpc0.server.Rpc0ServerBuilder;
 import io.vertxrpc0.service.HelloService;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
@@ -26,9 +26,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * End-to-end test for {@code Rpc0ServerBuilder.buildSupplier()} and
@@ -45,13 +44,11 @@ public class MultiVerticleDeploymentTest {
   private static final int CLIENT_VERTICLES = 4;
   private static final int CALLS_PER_VERTICLE = 5;
 
-  public static final class ThreadCountingHello implements HelloService {
-    final Set<String> handlerThreads = new ConcurrentSkipListSet<>();
-
-    @Override
-    public Future<String> sayHello(String name) {
-      handlerThreads.add(Thread.currentThread().getName());
-      return Future.succeededFuture("Hello, " + name);
+  private static int findFreePort() {
+    try (ServerSocket s = new ServerSocket(0)) {
+      return s.getLocalPort();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -111,11 +108,13 @@ public class MultiVerticleDeploymentTest {
             })));
   }
 
-  private static int findFreePort() {
-    try (ServerSocket s = new ServerSocket(0)) {
-      return s.getLocalPort();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+  public static final class ThreadCountingHello implements HelloService {
+    final Set<String> handlerThreads = new ConcurrentSkipListSet<>();
+
+    @Override
+    public Future<String> sayHello(String name) {
+      handlerThreads.add(Thread.currentThread().getName());
+      return Future.succeededFuture("Hello, " + name);
     }
   }
 }

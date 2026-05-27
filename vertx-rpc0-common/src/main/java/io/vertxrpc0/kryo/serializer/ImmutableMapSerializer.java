@@ -1,5 +1,7 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static com.esotericsoftware.kryo.Kryo.NULL;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
@@ -11,12 +13,9 @@ import com.esotericsoftware.kryo.util.Generics;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
-
 import java.util.Comparator;
 import java.util.Map;
 import java.util.SortedMap;
-
-import static com.esotericsoftware.kryo.Kryo.NULL;
 
 /**
  * @author fishzhao

@@ -13,7 +13,6 @@ import io.vertxrpc0.invoke.ResultCode;
  */
 public final class InvokeResultSerializer extends ImmutableSerializer<InvokeResult> {
 
-
   @Override
   public void write(Kryo kryo, Output output, InvokeResult object) {
     output.writeLong(object.getRequestId(), true);
@@ -26,12 +25,10 @@ public final class InvokeResultSerializer extends ImmutableSerializer<InvokeResu
   @Override
   public InvokeResult read(Kryo kryo, Input input, Class<? extends InvokeResult> type) {
     return new InvokeResult(
-            input.readLong(true),
-            input.readLong(true),
-            ResultCode.forCode(input.readInt(true)),
-            input.readString(),
-            kryo.readClassAndObject(input)
-    );
+        input.readLong(true),
+        input.readLong(true),
+        ResultCode.forCode(input.readInt(true)),
+        input.readString(),
+        kryo.readClassAndObject(input));
   }
-
 }

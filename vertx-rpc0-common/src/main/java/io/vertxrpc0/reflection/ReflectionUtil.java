@@ -2,7 +2,6 @@ package io.vertxrpc0.reflection;
 
 import com.esotericsoftware.kryo.util.GenericsUtil;
 import io.vertx.core.Future;
-
 import java.lang.reflect.Type;
 import java.util.AbstractMap;
 import java.util.Collection;

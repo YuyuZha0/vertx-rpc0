@@ -10,7 +10,7 @@ final class RuntimeTypeTrait {
     throw new IllegalStateException();
   }
 
-  //element should not be null
+  // element should not be null
   static Class<?> elementType(Iterable<?> iterable) {
     Class<?> elementType = null;
     for (Object element : iterable) {
@@ -25,5 +25,4 @@ final class RuntimeTypeTrait {
     }
     return elementType;
   }
-
 }

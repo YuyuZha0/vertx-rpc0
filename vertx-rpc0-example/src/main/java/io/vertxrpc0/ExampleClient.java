@@ -1,5 +1,7 @@
 package io.vertxrpc0;
 
+import io.vertx.core.Vertx;
+import io.vertx.core.net.NetClientOptions;
 import io.vertxrpc0.client.ServiceFactory;
 import io.vertxrpc0.client.ServiceFactoryBuilder;
 import io.vertxrpc0.service.BeanService;
@@ -8,9 +10,6 @@ import io.vertxrpc0.service.HelloService;
 import io.vertxrpc0.service.StringService;
 import io.vertxrpc0.service.TimeService;
 import io.vertxrpc0.service.VoidService;
-import io.vertx.core.Vertx;
-import io.vertx.core.net.NetClientOptions;
-
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;

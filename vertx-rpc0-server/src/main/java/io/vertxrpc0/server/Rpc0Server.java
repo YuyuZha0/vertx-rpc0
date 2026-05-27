@@ -7,12 +7,11 @@ import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.NetSocket;
 import io.vertxrpc0.transport.MessageTransport;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author fishzhao
@@ -29,10 +28,11 @@ public final class Rpc0Server extends AbstractVerticle {
   private final long keepAliveMills;
   private NetServer netServer;
 
-  Rpc0Server(@NonNull ServiceLookup serviceLookup,
-             @NonNull MessageTransport messageTransport,
-             @NonNull NetServerOptions netServerOptions,
-             @NonNull Duration keepAliveDuration) {
+  Rpc0Server(
+      @NonNull ServiceLookup serviceLookup,
+      @NonNull MessageTransport messageTransport,
+      @NonNull NetServerOptions netServerOptions,
+      @NonNull Duration keepAliveDuration) {
     this.serviceLookup = serviceLookup;
     this.messageTransport = messageTransport;
     this.netServerOptions = netServerOptions;
@@ -43,30 +43,35 @@ public final class Rpc0Server extends AbstractVerticle {
   public void start(Promise<Void> startPromise) {
     NetServer server = vertx.createNetServer(netServerOptions);
     server.connectHandler(this::handleConnect);
-    server.listen().onComplete(result -> {
-      if (result.failed()) {
-        startPromise.tryFail(result.cause());
-        return;
-      }
-      this.netServer = server;
-      if (keepAliveMills > 0) {
-        // Scan often enough to actually evict connections near the keep-alive
-        // boundary: every keepAliveMills/4 (but no faster than once a second).
-        long scanInterval = Math.max(1000L, keepAliveMills / 4);
-        vertx.setPeriodic(scanInterval, timerId -> {
-          if (closed.get()) {
-            vertx.cancelTimer(timerId);
-            return;
-          }
-          // scanCloseInactive iterates the non-thread-safe `invokers` set, so it
-          // must run on the same context as add/remove. Vert.x currently fires
-          // setPeriodic callbacks on the calling context, but the runOnContext
-          // is a cheap defensive anchor in case that ever changes.
-          context.runOnContext(v -> scanCloseInactive());
-        });
-      }
-      startPromise.complete();
-    });
+    server
+        .listen()
+        .onComplete(
+            result -> {
+              if (result.failed()) {
+                startPromise.tryFail(result.cause());
+                return;
+              }
+              this.netServer = server;
+              if (keepAliveMills > 0) {
+                // Scan often enough to actually evict connections near the keep-alive
+                // boundary: every keepAliveMills/4 (but no faster than once a second).
+                long scanInterval = Math.max(1000L, keepAliveMills / 4);
+                vertx.setPeriodic(
+                    scanInterval,
+                    timerId -> {
+                      if (closed.get()) {
+                        vertx.cancelTimer(timerId);
+                        return;
+                      }
+                      // scanCloseInactive iterates the non-thread-safe `invokers` set, so it
+                      // must run on the same context as add/remove. Vert.x currently fires
+                      // setPeriodic callbacks on the calling context, but the runOnContext
+                      // is a cheap defensive anchor in case that ever changes.
+                      context.runOnContext(v -> scanCloseInactive());
+                    });
+              }
+              startPromise.complete();
+            });
   }
 
   private void scanCloseInactive() {
@@ -77,18 +82,21 @@ public final class Rpc0Server extends AbstractVerticle {
     for (ServiceInvoker invoker : invokers) {
       long lastActiveTime = invoker.lastActiveTime();
       if (lastActiveTime > 0 && currentTime - lastActiveTime > keepAliveMills) {
-        invoker.getSocket().close()
-                .onFailure(cause -> log.debug("Failed to close inactive socket: {}", cause.toString()));
+        invoker
+            .getSocket()
+            .close()
+            .onFailure(
+                cause -> {
+                  if (log.isDebugEnabled()) {
+                    log.debug("Failed to close inactive socket: {}", cause.toString());
+                  }
+                });
       }
     }
   }
 
   private void handleConnect(NetSocket netSocket) {
-    ServiceInvoker invoker = new ServiceInvoker(
-            netSocket,
-            messageTransport,
-            serviceLookup
-    );
+    ServiceInvoker invoker = new ServiceInvoker(netSocket, messageTransport, serviceLookup);
     // The add runs synchronously here — connectHandler is dispatched on the
     // verticle's context.
     //

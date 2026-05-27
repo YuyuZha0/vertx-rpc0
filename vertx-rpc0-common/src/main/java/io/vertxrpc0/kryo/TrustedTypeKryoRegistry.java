@@ -29,6 +29,5 @@ public class TrustedTypeKryoRegistry implements KryoRegistry {
     for (IntMap.Entry<Class<?>> entry : customTypeMap.entries()) {
       kryo.register(entry.value, entry.key + minId);
     }
-
   }
 }

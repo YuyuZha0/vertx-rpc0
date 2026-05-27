@@ -1,5 +1,7 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -14,19 +16,16 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.kryo.KryoRegistry;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Test;
 
 public class ImmutableMapSerializerTest {
 

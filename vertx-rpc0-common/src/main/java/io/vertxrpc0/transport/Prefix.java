@@ -4,7 +4,6 @@ import com.google.common.primitives.Shorts;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCountUtil;
-
 import java.io.Serializable;
 
 /**

@@ -10,13 +10,12 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.FastThreadLocal;
-import lombok.NonNull;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
 import java.util.function.Supplier;
+import lombok.NonNull;
 
 /**
  * @author fishzhao

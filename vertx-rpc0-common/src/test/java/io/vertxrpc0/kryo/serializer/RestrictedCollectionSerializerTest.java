@@ -1,10 +1,12 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.esotericsoftware.kryo.Kryo;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.testutil.KryoRoundtrip;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,10 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 public class RestrictedCollectionSerializerTest {
 

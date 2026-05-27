@@ -1,5 +1,11 @@
 package io.vertxrpc0.transport;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import io.netty.buffer.ByteBuf;
@@ -11,21 +17,26 @@ import io.vertxrpc0.invoke.InvokeSpec;
 import io.vertxrpc0.invoke.ParameterArray;
 import io.vertxrpc0.invoke.ResultCode;
 import io.vertxrpc0.kryo.KryoFactory;
-import org.junit.jupiter.api.Test;
-
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.util.concurrent.ArrayBlockingQueue;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 public class KryoMessageTransportTest {
 
   private final KryoMessageTransport transport = new KryoMessageTransport(new KryoFactory());
+
+  @SuppressWarnings("unchecked")
+  private static Kryo readKryoForCurrentThread(KryoMessageTransport t) {
+    try {
+      Field field = KryoMessageTransport.class.getDeclaredField("kryoFastThreadLocal");
+      field.setAccessible(true);
+      FastThreadLocal<Kryo> ftl = (FastThreadLocal<Kryo>) field.get(t);
+      return ftl.get();
+    } catch (ReflectiveOperationException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   @Test
   public void roundTripInvokeSpec() {
@@ -97,17 +108,5 @@ public class KryoMessageTransportTest {
     other.start();
     other.join();
     assertNotSame(thisThread, sink.poll());
-  }
-
-  @SuppressWarnings("unchecked")
-  private static Kryo readKryoForCurrentThread(KryoMessageTransport t) {
-    try {
-      Field field = KryoMessageTransport.class.getDeclaredField("kryoFastThreadLocal");
-      field.setAccessible(true);
-      FastThreadLocal<Kryo> ftl = (FastThreadLocal<Kryo>) field.get(t);
-      return ftl.get();
-    } catch (ReflectiveOperationException e) {
-      throw new RuntimeException(e);
-    }
   }
 }

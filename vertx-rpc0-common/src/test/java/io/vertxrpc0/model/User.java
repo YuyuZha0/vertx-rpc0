@@ -4,9 +4,6 @@ package io.vertxrpc0.model;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -17,6 +14,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * @author fishzhao

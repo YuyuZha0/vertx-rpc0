@@ -4,10 +4,9 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
-import lombok.NonNull;
-
 import java.util.Comparator;
 import java.util.SortedSet;
+import lombok.NonNull;
 
 /**
  * @author fishzhao

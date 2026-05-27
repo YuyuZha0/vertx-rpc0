@@ -1,12 +1,15 @@
 package io.vertxrpc0.kryo;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.junit.jupiter.api.Test;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -18,11 +21,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 public class SafeKryoTest {
 
@@ -127,20 +126,6 @@ public class SafeKryoTest {
     assertThrows(NullPointerException.class, () -> kryo.getRegistration(null));
   }
 
-  enum MyEnum {
-    A,
-    B {
-      @Override
-      public String label() {
-        return "b!";
-      }
-    };
-
-    public String label() {
-      return name();
-    }
-  }
-
   @Test
   public void defaultConstructorUsesTrustedReferenceResolver() throws Exception {
     SafeKryo kryo = new SafeKryo();
@@ -162,5 +147,19 @@ public class SafeKryoTest {
     Kryo kryo = new SafeKryo();
     kryo.register(List.class);
     assertNotNull(kryo.getRegistration(Arrays.asList(1, 2).getClass()));
+  }
+
+  enum MyEnum {
+    A,
+    B {
+      @Override
+      public String label() {
+        return "b!";
+      }
+    };
+
+    public String label() {
+      return name();
+    }
   }
 }

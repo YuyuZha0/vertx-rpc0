@@ -1,11 +1,5 @@
 package io.vertxrpc0.client;
 
-import io.vertxrpc0.invoke.InvokeResult;
-import io.vertxrpc0.invoke.InvokeSpec;
-import io.vertxrpc0.transport.MarkedLenMessageHandler;
-import io.vertxrpc0.transport.MessageTransport;
-import io.vertxrpc0.transport.ParserHandler;
-import io.vertxrpc0.transport.Prefix;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
@@ -17,9 +11,12 @@ import io.vertx.core.VertxException;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.impl.NetSocketInternal;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-
+import io.vertxrpc0.invoke.InvokeResult;
+import io.vertxrpc0.invoke.InvokeSpec;
+import io.vertxrpc0.transport.MarkedLenMessageHandler;
+import io.vertxrpc0.transport.MessageTransport;
+import io.vertxrpc0.transport.ParserHandler;
+import io.vertxrpc0.transport.Prefix;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
 /**
  * @author fishzhao
@@ -42,7 +41,10 @@ final class ProxyStub implements ParserHandler, Closeable {
   private final Timer timer;
   private final Duration timeout;
 
-  /** The {@link ByteBufAllocator} from the underlying channel — the only spot that needs the internal API. */
+  /**
+   * The {@link ByteBufAllocator} from the underlying channel — the only spot that needs the
+   * internal API.
+   */
   private ByteBufAllocator alloc() {
     return ((NetSocketInternal) socket).channelHandlerContext().alloc();
   }
@@ -53,15 +55,16 @@ final class ProxyStub implements ParserHandler, Closeable {
 
   void registerHandlers(Runnable dispose) {
     socket.handler(new MarkedLenMessageHandler(this));
-    socket.closeHandler(v -> {
-      cleanup(new VertxException("Connection closed!", true));
-      if (dispose != null) {
-        try {
-          dispose.run();
-        } catch (Exception ignore) {
-        }
-      }
-    });
+    socket.closeHandler(
+        v -> {
+          cleanup(new VertxException("Connection closed!", true));
+          if (dispose != null) {
+            try {
+              dispose.run();
+            } catch (Exception ignore) {
+            }
+          }
+        });
   }
 
   Future<InvokeResult> call(InvokeSpec invokeSpec) {
@@ -82,28 +85,34 @@ final class ProxyStub implements ParserHandler, Closeable {
     if (old != null) {
       old.tryFail("Duplicated requestId: " + requestId);
     }
-    socket.write(Buffer.buffer(request)).onComplete(result -> {
-      // NetSocket.write does not release the wrapped ByteBuf — see
-      // NetSocketByteBufOwnershipTest. Release it explicitly here.
-      ReferenceCountUtil.release(request);
-      if (result.succeeded()) {
-        registerTimeout(requestId);
-      } else {
-        resultMap.remove(requestId);
-        promise.tryFail(result.cause());
-      }
-    });
+    socket
+        .write(Buffer.buffer(request))
+        .onComplete(
+            result -> {
+              // NetSocket.write does not release the wrapped ByteBuf — see
+              // NetSocketByteBufOwnershipTest. Release it explicitly here.
+              ReferenceCountUtil.release(request);
+              if (result.succeeded()) {
+                registerTimeout(requestId);
+              } else {
+                resultMap.remove(requestId);
+                promise.tryFail(result.cause());
+              }
+            });
     return promise.future();
   }
 
   private void registerTimeout(long requestId) {
     if (resultMap.containsKey(requestId)) {
-      timer.newTimeout(timeout -> {
-        Promise<InvokeResult> promise = resultMap.remove(requestId);
-        if (promise != null) {
-          promise.tryFail("Timeout");
-        }
-      }, timeout.toMillis(), TimeUnit.MILLISECONDS);
+      timer.newTimeout(
+          timeout -> {
+            Promise<InvokeResult> promise = resultMap.remove(requestId);
+            if (promise != null) {
+              promise.tryFail("Timeout");
+            }
+          },
+          timeout.toMillis(),
+          TimeUnit.MILLISECONDS);
     }
   }
 

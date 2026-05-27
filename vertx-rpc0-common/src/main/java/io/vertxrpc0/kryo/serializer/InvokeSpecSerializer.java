@@ -6,7 +6,6 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ImmutableSerializer;
 import io.vertxrpc0.invoke.InvokeSpec;
 import io.vertxrpc0.invoke.ParameterArray;
-
 import java.lang.invoke.MethodType;
 
 /**

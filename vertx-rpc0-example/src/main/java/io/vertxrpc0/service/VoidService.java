@@ -1,6 +1,5 @@
 package io.vertxrpc0.service;
 
-
 import io.vertx.core.Future;
 
 /**

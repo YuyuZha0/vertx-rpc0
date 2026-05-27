@@ -23,7 +23,6 @@ import io.vertxrpc0.service.impl.StringServiceImpl;
 import io.vertxrpc0.service.impl.TimeServiceImpl;
 import io.vertxrpc0.service.impl.VoidServiceImpl;
 import io.vertxrpc0.util.ObjectMapperSupplier;
-
 import java.time.Duration;
 
 public final class Rpc0TestHarness {

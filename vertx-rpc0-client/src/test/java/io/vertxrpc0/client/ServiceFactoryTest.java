@@ -1,5 +1,10 @@
 package io.vertxrpc0.client;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableSet;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -7,11 +12,6 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,17 +19,13 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
 @ExtendWith(VertxExtension.class)
 public class ServiceFactoryTest {
-
-  interface ServiceA {}
-  interface ServiceB {}
 
   private ProxyStubSupplier supplier;
 
@@ -106,4 +102,8 @@ public class ServiceFactoryTest {
     factory.close(p);
     Mockito.verify(supplier).close(p);
   }
+
+  interface ServiceA {}
+
+  interface ServiceB {}
 }

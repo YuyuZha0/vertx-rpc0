@@ -10,7 +10,6 @@ public enum ResultCode {
 
   private static final ResultCode[] LOOKUP = ResultCode.values();
 
-
   public static ResultCode forCode(int code) {
     if (code < 0 || code >= LOOKUP.length) {
       return null;

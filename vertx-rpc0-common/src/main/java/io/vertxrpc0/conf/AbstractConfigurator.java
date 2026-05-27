@@ -1,19 +1,18 @@
 package io.vertxrpc0.conf;
 
 import com.esotericsoftware.kryo.util.IntMap;
+import com.google.common.base.Preconditions;
+import com.google.common.reflect.ClassPath;
 import io.vertxrpc0.annotation.TrustedType;
 import io.vertxrpc0.kryo.KryoRegistry;
 import io.vertxrpc0.kryo.TrustedTypeKryoRegistry;
-import com.google.common.base.Preconditions;
-import com.google.common.reflect.ClassPath;
+import java.io.IOException;
+import java.util.Set;
+import java.util.function.Consumer;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
-import java.util.Set;
-import java.util.function.Consumer;
 
 /**
  * @author fishzhao

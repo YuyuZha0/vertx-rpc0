@@ -1,34 +1,22 @@
 package io.vertxrpc0.server;
 
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.net.NetServerOptions;
-import io.vertx.junit5.VertxExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.lang.reflect.Field;
-import java.time.Duration;
-import java.util.function.Supplier;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.net.NetServerOptions;
+import io.vertx.junit5.VertxExtension;
+import java.lang.reflect.Field;
+import java.time.Duration;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 @ExtendWith(VertxExtension.class)
 public class Rpc0ServerBuilderTest {
-
-  interface DemoService {
-    Future<String> hello(String n);
-  }
-
-  static final class DemoServiceImpl implements DemoService {
-    @Override
-    public Future<String> hello(String n) {
-      return Future.succeededFuture(n);
-    }
-  }
 
   @Test
   public void buildWithoutAnyBindingIsRejected(Vertx vertx) {
@@ -62,8 +50,6 @@ public class Rpc0ServerBuilderTest {
     assertThrows(NullPointerException.class, () -> builder.setKeepAliveDuration(null));
   }
 
-  // === buildSupplier ===
-
   @Test
   public void buildSupplierProducesFreshInstancesPerCall(Vertx vertx) {
     Rpc0ServerBuilder builder = new Rpc0ServerBuilder(vertx, new NetServerOptions())
@@ -81,6 +67,8 @@ public class Rpc0ServerBuilderTest {
     Rpc0ServerBuilder builder = new Rpc0ServerBuilder(vertx, new NetServerOptions());
     assertThrows(IllegalArgumentException.class, builder::buildSupplier);
   }
+
+  // === buildSupplier ===
 
   @Test
   public void buildSupplierSnapshotsConfig(Vertx vertx) throws Exception {
@@ -112,8 +100,19 @@ public class Rpc0ServerBuilderTest {
     assertEquals(true, services.containsKey(DemoService.class.getTypeName()));
   }
 
+  interface DemoService {
+    Future<String> hello(String n);
+  }
+
   interface OtherService {
     Future<String> ping();
+  }
+
+  static final class DemoServiceImpl implements DemoService {
+    @Override
+    public Future<String> hello(String n) {
+      return Future.succeededFuture(n);
+    }
   }
 
   static final class OtherServiceImpl implements OtherService {

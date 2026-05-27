@@ -10,13 +10,12 @@ import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
 import io.vertxrpc0.transport.MessageTransport;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Caches a single {@link ProxyStub} per supplier instance, reconnecting on demand with

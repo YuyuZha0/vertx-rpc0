@@ -5,10 +5,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterators;
 import com.google.common.primitives.Primitives;
-import lombok.AccessLevel;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
 import java.io.Serializable;
 import java.lang.invoke.MethodType;
 import java.util.AbstractList;
@@ -26,6 +22,9 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 /**
  * @author fishzhao

@@ -1,18 +1,17 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import io.vertxrpc0.kryo.KryoFactory;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Test;
 
 public class MethodTypeSerializerTest {
 

@@ -17,9 +17,9 @@ public final class ObjectMapperSupplier implements Supplier<ObjectMapper> {
   @Override
   public ObjectMapper get() {
     return new ObjectMapper()
-            .registerModule(new JavaTimeModule())
-            .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+        .registerModule(new JavaTimeModule())
+        .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+        .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
   }
 }

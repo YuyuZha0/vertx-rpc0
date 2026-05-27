@@ -1,5 +1,9 @@
 package io.vertxrpc0.kryo;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -10,14 +14,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
+import io.netty.util.internal.PlatformDependent;
 import io.vertxrpc0.invoke.InvokeResult;
 import io.vertxrpc0.invoke.InvokeSpec;
 import io.vertxrpc0.invoke.ParameterArray;
 import io.vertxrpc0.invoke.ResultCode;
-import io.netty.util.internal.PlatformDependent;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 import java.lang.invoke.MethodType;
@@ -40,11 +41,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Test;
 
 public class KryoFactoryTest {
 

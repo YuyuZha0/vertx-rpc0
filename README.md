@@ -1,13 +1,20 @@
 # vertx-rpc0
 
-A lightweight, high-performance Java RPC framework built on top of [Eclipse Vert.x](https://vertx.io) and [Kryo](https://github.com/EsotericSoftware/kryo). It lets you expose plain Java interfaces over the network and call them remotely as if they were local — with strict, opt-in type registration as a defense against deserialization attacks.
+A lightweight, high-performance Java RPC framework built on top of [Eclipse Vert.x](https://vertx.io)
+and [Kryo](https://github.com/EsotericSoftware/kryo). It lets you expose plain Java interfaces over the network and call
+them remotely as if they were local — with strict, opt-in type registration as a defense against deserialization
+attacks.
 
 ## Why vertx-rpc0
 
-- **Async by design.** Service methods return `io.vertx.core.Future<T>`, so the entire request lifecycle fits the Vert.x event-loop model with no blocking.
-- **Fast wire format.** Kryo with custom serializers for collections, maps, immutable Guava types, `MethodType`, ASCII strings, and Vert.x `Buffer`.
-- **Trusted-types-only.** A hardened `SafeKryo` rejects unregistered classes; user-defined payloads must be opted in with `@TrustedType` or a package scan.
-- **Small footprint.** Four small modules — `common`, `client`, `server`, `example` — with no transitive runtime surprises beyond Vert.x + Kryo + Guava.
+- **Async by design.** Service methods return `io.vertx.core.Future<T>`, so the entire request lifecycle fits the Vert.x
+  event-loop model with no blocking.
+- **Fast wire format.** Kryo with custom serializers for collections, maps, immutable Guava types, `MethodType`, ASCII
+  strings, and Vert.x `Buffer`.
+- **Trusted-types-only.** A hardened `SafeKryo` rejects unregistered classes; user-defined payloads must be opted in
+  with `@TrustedType` or a package scan.
+- **Small footprint.** Four small modules — `common`, `client`, `server`, `example` — with no transitive runtime
+  surprises beyond Vert.x + Kryo + Guava.
 
 ## Where this fits
 
@@ -39,14 +46,14 @@ What's left — and what this framework is actually *for* — is one niche:
 That niche is real but narrow. If any of the following are true, reach for
 something else:
 
-| Need | Use |
-|---|---|
-| Cross-language clients (Go, Python, Node…) | gRPC |
-| Public API or third-party callers | gRPC, or REST + OpenAPI |
-| L7 mesh routing / per-RPC tracing through Istio | gRPC (HTTP/2 is L7-parseable by Envoy; Kryo-over-TCP is not — `vertx-rpc0` through a sidecar reduces to L4 byte counting) |
-| Built-in discovery / LB / retries / circuit breakers | Dubbo, or run `vertx-rpc0` behind a mesh while accepting that mesh-level L7 features won't apply |
-| HTTP ergonomics in Java | Retrofit, OpenFeign, Spring `RestClient` |
-| Streaming / server-push / bidirectional | gRPC |
+| Need                                                 | Use                                                                                                                       |
+|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| Cross-language clients (Go, Python, Node…)           | gRPC                                                                                                                      |
+| Public API or third-party callers                    | gRPC, or REST + OpenAPI                                                                                                   |
+| L7 mesh routing / per-RPC tracing through Istio      | gRPC (HTTP/2 is L7-parseable by Envoy; Kryo-over-TCP is not — `vertx-rpc0` through a sidecar reduces to L4 byte counting) |
+| Built-in discovery / LB / retries / circuit breakers | Dubbo, or run `vertx-rpc0` behind a mesh while accepting that mesh-level L7 features won't apply                          |
+| HTTP ergonomics in Java                              | Retrofit, OpenFeign, Spring `RestClient`                                                                                  |
+| Streaming / server-push / bidirectional              | gRPC                                                                                                                      |
 
 The framework is ~80 source files. You can read it end-to-end in an
 afternoon and know exactly what's on the wire and what isn't — that's
@@ -109,7 +116,8 @@ public final class HelloServiceImpl implements HelloService {
 }
 ```
 
-Method bodies run on the Vert.x event loop — don't block. The framework does not synchronize calls, so any shared mutable state inside an implementation is your responsibility.
+Method bodies run on the Vert.x event loop — don't block. The framework does not synchronize calls, so any shared
+mutable state inside an implementation is your responsibility.
 
 ### 3. Start a server
 
@@ -229,23 +237,29 @@ need multiple instances.
 
 All primitives, their boxed wrappers, primitive arrays, and the following references (plus their `T[]` array forms):
 
-`Byte`, `Boolean`, `Character`, `Short`, `Integer`, `Float`, `Double`, `String`, `BitSet`, `URL`, `Charset`, `Currency`, `BigInteger`, `BigDecimal`, `Date`, `Calendar`, `TimeZone`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetDateTime`, `ZonedDateTime`, `Duration`, `ZoneId`, `Instant`, `io.netty.util.AsciiString`, `io.vertx.core.buffer.Buffer`.
+`Byte`, `Boolean`, `Character`, `Short`, `Integer`, `Float`, `Double`, `String`, `BitSet`, `URL`, `Charset`, `Currency`,
+`BigInteger`, `BigDecimal`, `Date`, `Calendar`, `TimeZone`, `LocalDate`, `LocalTime`, `LocalDateTime`, `OffsetDateTime`,
+`ZonedDateTime`, `Duration`, `ZoneId`, `Instant`, `io.netty.util.AsciiString`, `io.vertx.core.buffer.Buffer`.
 
 ### Collections
 
-Declare parameters and return types using one of these interfaces — the framework picks the right serializer automatically:
+Declare parameters and return types using one of these interfaces — the framework picks the right serializer
+automatically:
 
 `List`, `Set`, `SortedSet`, `Queue`, `Deque`, `Collection`, plus Guava's `ImmutableCollection` family.
 
-If you need a specific implementation, the following concrete classes are pre-registered: `ArrayList`, `LinkedList`, `LinkedHashSet`, `HashSet`, `TreeSet`, `ArrayDeque`, `PriorityQueue`. Anything outside this list throws on send.
+If you need a specific implementation, the following concrete classes are pre-registered: `ArrayList`, `LinkedList`,
+`LinkedHashSet`, `HashSet`, `TreeSet`, `ArrayDeque`, `PriorityQueue`. Anything outside this list throws on send.
 
 ### Maps
 
-Declared interface: `Map`, `SortedMap`, or Guava's `ImmutableMap`. Pre-registered implementations: `HashMap`, `LinkedHashMap`, `TreeMap`, `Properties`.
+Declared interface: `Map`, `SortedMap`, or Guava's `ImmutableMap`. Pre-registered implementations: `HashMap`,
+`LinkedHashMap`, `TreeMap`, `Properties`.
 
 ### Custom types
 
-Annotate the class with `@TrustedType(typeId = N)` and either register it explicitly or expose it via a package scan. The `typeId` must be unique within a registry.
+Annotate the class with `@TrustedType(typeId = N)` and either register it explicitly or expose it via a package scan.
+The `typeId` must be unique within a registry.
 
 ```java
 package io.vertxrpc0.model;
@@ -278,17 +292,22 @@ builder.registerTypes("io.vertxrpc0.model", false);
 builder.registerType(User.class);
 ```
 
-A custom `KryoRegistry` can be supplied instead of `registerTypes` / `registerType`, but the two approaches are mutually exclusive on a single builder.
+A custom `KryoRegistry` can be supplied instead of `registerTypes` / `registerType`, but the two approaches are mutually
+exclusive on a single builder.
 
 ## Custom comparators
 
-`Comparator` instances often appear inside payloads — for example, sorted collections. The framework's `ComparatorSerializer` recognizes a closed set of comparators by structure (not by class name or reflected fields), so the wire format is independent of JDK or Guava internals.
+`Comparator` instances often appear inside payloads — for example, sorted collections. The framework's
+`ComparatorSerializer` recognizes a closed set of comparators by structure (not by class name or reflected fields), so
+the wire format is independent of JDK or Guava internals.
 
 Wire-safe set:
 
 - **JDK singletons** — `Comparator.naturalOrder()`, `Comparator.reverseOrder()`.
-- **Guava singletons** — `Ordering.natural()`, `Ordering.allEqual()`, `Ordering.arbitrary()`, `Ordering.usingToString()`.
-- **The chainable `io.vertxrpc0.Comparators<T>` family** — for anything that needs composition (`nullsFirst`, `nullsLast`, `reverse`, `compound`). Start a chain from one of the five static factories and chain instance methods:
+- **Guava singletons** — `Ordering.natural()`, `Ordering.allEqual()`, `Ordering.arbitrary()`,
+  `Ordering.usingToString()`.
+- **The chainable `io.vertxrpc0.Comparators<T>` family** — for anything that needs composition (`nullsFirst`,
+  `nullsLast`, `reverse`, `compound`). Start a chain from one of the five static factories and chain instance methods:
 
   ```java
   import io.vertxrpc0.Comparators;
@@ -297,15 +316,24 @@ Wire-safe set:
   Comparator<User> b = Comparators.<User>natural().compound(Comparators.usingToString());
   ```
 
-  `Comparators` is a sealed abstract class — only the five leaf factories and the four chain operators are wire-representable. The chain methods only accept `Comparators<? super T>`, so every reachable composition is statically guaranteed to round-trip.
+  `Comparators` is a sealed abstract class — only the five leaf factories and the four chain operators are
+  wire-representable. The chain methods only accept `Comparators<? super T>`, so every reachable composition is
+  statically guaranteed to round-trip.
 
-Anything else — lambdas from `Comparator.comparing*` or `Comparator.thenComparing`, anonymous classes, custom `Comparator` implementations — is **rejected at serialize time** with a `KryoException`. If you really need an arbitrary `Serializable` comparator on the wire, construct `ComparatorSerializer(true)` to opt into the JDK-serialization fallback. **That path is a known deserialization-attack surface** and should only be enabled when the channel itself is trusted.
+Anything else — lambdas from `Comparator.comparing*` or `Comparator.thenComparing`, anonymous classes, custom
+`Comparator` implementations — is **rejected at serialize time** with a `KryoException`. If you really need an arbitrary
+`Serializable` comparator on the wire, construct `ComparatorSerializer(true)` to opt into the JDK-serialization
+fallback. **That path is a known deserialization-attack surface** and should only be enabled when the channel itself is
+trusted.
 
 ## SSL/TLS
 
-Vert.x's native TLS support is used unchanged. Pass standard `NetServerOptions` / `NetClientOptions` with `setSsl(true)` and the desired `KeyCertOptions` / `TrustOptions`. See the Vert.x documentation: https://vertx.io/docs/vertx-core/java/#ssl
+Vert.x's native TLS support is used unchanged. Pass standard `NetServerOptions` / `NetClientOptions` with `setSsl(true)`
+and the desired `KeyCertOptions` / `TrustOptions`. See the Vert.x
+documentation: https://vertx.io/docs/vertx-core/java/#ssl
 
-For local testing against a `SelfSignedCertificate`, set `setHostnameVerificationAlgorithm("")` on the client options to skip hostname verification.
+For local testing against a `SelfSignedCertificate`, set `setHostnameVerificationAlgorithm("")` on the client options to
+skip hostname verification.
 
 ## Building and testing
 
@@ -328,11 +356,11 @@ java -jar vertx-rpc0-example/target/vertx-rpc0-example-1.0.0.jar 127.0.0.1 9549
 
 ## Module layout
 
-| Module | What's inside |
-|---|---|
-| `vertx-rpc0-common` | Wire transport, Kryo factory + safe registry, custom serializers, configurator base class |
-| `vertx-rpc0-client` | `ServiceFactory`, dynamic-proxy invocation handler, connection-pooled `ProxyStub` |
-| `vertx-rpc0-server` | `Rpc0Server` verticle, per-connection `ServiceInvoker`, `ServiceLookup` |
+| Module               | What's inside                                                                                      |
+|----------------------|----------------------------------------------------------------------------------------------------|
+| `vertx-rpc0-common`  | Wire transport, Kryo factory + safe registry, custom serializers, configurator base class          |
+| `vertx-rpc0-client`  | `ServiceFactory`, dynamic-proxy invocation handler, connection-pooled `ProxyStub`                  |
+| `vertx-rpc0-server`  | `Rpc0Server` verticle, per-connection `ServiceInvoker`, `ServiceLookup`                            |
 | `vertx-rpc0-example` | Sample services, an `ExampleServer` / `ExampleClient` runnable pair, and the end-to-end test suite |
 
 ## License

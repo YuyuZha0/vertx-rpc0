@@ -1,5 +1,10 @@
 package io.vertxrpc0.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
@@ -9,33 +14,17 @@ import io.vertx.junit5.VertxTestContext;
 import io.vertxrpc0.invoke.InvokeResult;
 import io.vertxrpc0.invoke.InvokeSpec;
 import io.vertxrpc0.invoke.ResultCode;
+import java.lang.reflect.Method;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import java.lang.reflect.Method;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(VertxExtension.class)
 @Timeout(value = 10, timeUnit = TimeUnit.SECONDS)
 public class ProxyStubInvocationHandlerTest {
-
-  interface AsyncService {
-    Future<String> hello(String name);
-
-    Future<Integer> count();
-  }
-
-  interface SyncService {
-    String hello(String name);
-  }
 
   private static Method method(Class<?> iface, String name) throws Exception {
     for (Method m : iface.getDeclaredMethods()) {
@@ -200,5 +189,15 @@ public class ProxyStubInvocationHandlerTest {
       assertNull(result);
       ctx.completeNow();
     })));
+  }
+
+  interface AsyncService {
+    Future<String> hello(String name);
+
+    Future<Integer> count();
+  }
+
+  interface SyncService {
+    String hello(String name);
   }
 }

@@ -3,13 +3,6 @@ package io.vertxrpc0.server;
 import com.esotericsoftware.kryo.KryoException;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
-import io.vertxrpc0.invoke.InvokeResult;
-import io.vertxrpc0.invoke.InvokeSpec;
-import io.vertxrpc0.invoke.ResultCode;
-import io.vertxrpc0.transport.MarkedLenMessageHandler;
-import io.vertxrpc0.transport.MessageTransport;
-import io.vertxrpc0.transport.ParserHandler;
-import io.vertxrpc0.transport.Prefix;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
 import io.netty.buffer.ByteBuf;
@@ -22,15 +15,21 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.NetSocketInternal;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
+import io.vertxrpc0.invoke.InvokeResult;
+import io.vertxrpc0.invoke.InvokeSpec;
+import io.vertxrpc0.invoke.ResultCode;
+import io.vertxrpc0.transport.MarkedLenMessageHandler;
+import io.vertxrpc0.transport.MessageTransport;
+import io.vertxrpc0.transport.ParserHandler;
+import io.vertxrpc0.transport.Prefix;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author fishzhao
@@ -47,14 +46,14 @@ final class ServiceInvoker implements ParserHandler {
   private final MessageTransport messageTransport;
   private final ServiceLookup serviceLookup;
 
-  /** The {@link ByteBufAllocator} from the underlying channel — the only spot that needs the internal API. */
-  private ByteBufAllocator alloc() {
-    return ((NetSocketInternal) socket).channelHandlerContext().alloc();
-  }
-
   private static String buildErrorMessage(Throwable cause) {
     return Strings.lenientFormat("%s(\"%s\")",
             cause.getClass().getTypeName(), Throwables.getRootCause(cause).getMessage());
+  }
+
+  /** The {@link ByteBufAllocator} from the underlying channel — the only spot that needs the internal API. */
+  private ByteBufAllocator alloc() {
+    return ((NetSocketInternal) socket).channelHandlerContext().alloc();
   }
 
   void registerHandlers(Runnable dispose) {

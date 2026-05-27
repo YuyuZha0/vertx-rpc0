@@ -1,5 +1,7 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static com.esotericsoftware.kryo.Kryo.NULL;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
@@ -11,11 +13,8 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
-
 import java.util.Comparator;
 import java.util.SortedSet;
-
-import static com.esotericsoftware.kryo.Kryo.NULL;
 
 /**
  * @author fishzhao

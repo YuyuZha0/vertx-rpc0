@@ -1,9 +1,7 @@
 package io.vertxrpc0.service;
 
-
-import io.vertxrpc0.model.User;
 import io.vertx.core.Future;
-
+import io.vertxrpc0.model.User;
 import java.util.List;
 
 /**

@@ -1,15 +1,14 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.esotericsoftware.kryo.Kryo;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.testutil.KryoRoundtrip;
-import org.junit.jupiter.api.Test;
-
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.Test;
 
 public class RestrictedSortedMapSerializerTest {
 

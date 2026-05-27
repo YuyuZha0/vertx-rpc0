@@ -1,5 +1,7 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -9,13 +11,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 import io.vertxrpc0.kryo.KryoFactory;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Test;
 
 public class ImmutableCollectionSerializerTest {
 

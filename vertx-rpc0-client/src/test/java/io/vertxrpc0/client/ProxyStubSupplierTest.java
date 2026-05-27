@@ -1,5 +1,11 @@
 package io.vertxrpc0.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -12,17 +18,10 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.transport.KryoMessageTransport;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(VertxExtension.class)
 @Timeout(value = 10, timeUnit = TimeUnit.SECONDS)
@@ -39,6 +38,11 @@ public class ProxyStubSupplierTest {
   // ---------------------------------------------------------------------------
   // Sync construction-validation tests (no Vertx event loop work).
   // ---------------------------------------------------------------------------
+
+  private static int unreachablePort() {
+    // 1 is a privileged + closed port on every loopback we'll see in CI/dev.
+    return 1;
+  }
 
   @Test
   public void constructorRejectsNonPositiveInitialBackoff(Vertx vertx) {
@@ -60,6 +64,10 @@ public class ProxyStubSupplierTest {
             Duration.ofSeconds(5), Duration.ofSeconds(1)));
   }
 
+  // ---------------------------------------------------------------------------
+  // Async tests driven through VertxTestContext.
+  // ---------------------------------------------------------------------------
+
   /** Pure backoff-math test — reflection on a private method, no event loop interaction. */
   @Test
   public void backoffGrowsExponentiallyThenCaps(Vertx vertx) throws Exception {
@@ -80,10 +88,6 @@ public class ProxyStubSupplierTest {
     assertEquals(2000L, m.invoke(supplier, 100)); // still capped
     assertEquals(2000L, m.invoke(supplier, 64));  // no overflow at large shift counts
   }
-
-  // ---------------------------------------------------------------------------
-  // Async tests driven through VertxTestContext.
-  // ---------------------------------------------------------------------------
 
   @Test
   public void concurrentGetsShareTheSameInflightConnect(Vertx vertx, VertxTestContext ctx) {
@@ -176,10 +180,5 @@ public class ProxyStubSupplierTest {
       ctx.verify(() -> assertTrue(second.future().failed()));
       ctx.completeNow();
     }));
-  }
-
-  private static int unreachablePort() {
-    // 1 is a privileged + closed port on every loopback we'll see in CI/dev.
-    return 1;
   }
 }

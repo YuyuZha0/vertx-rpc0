@@ -1,17 +1,15 @@
 package io.vertxrpc0.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.vertxrpc0.model.User;
-import io.vertxrpc0.service.BeanService;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import lombok.RequiredArgsConstructor;
-
+import io.vertxrpc0.model.User;
+import io.vertxrpc0.service.BeanService;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import lombok.RequiredArgsConstructor;
 
 /**
  * @author fishzhao

@@ -1,6 +1,5 @@
 package io.vertxrpc0.service;
 
-
 import io.vertx.core.Future;
 
 import java.util.List;
@@ -11,7 +10,6 @@ import java.util.Map;
  * @since 2021-12-24
  */
 public interface StringService {
-
 
   Future<List<String>> split(String s, char sep);
 

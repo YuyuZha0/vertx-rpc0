@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-
 /**
  * @author fishzhao
  * @since 2021-12-24
@@ -32,8 +31,6 @@ public class StringServiceImpl implements StringService {
       return Future.succeededFuture(ImmutableMap.of());
     }
     return Future.succeededFuture(
-            Splitter.on("&").withKeyValueSeparator("=")
-                    .split(url.substring(split + 1))
-    );
+        Splitter.on("&").withKeyValueSeparator("=").split(url.substring(split + 1)));
   }
 }

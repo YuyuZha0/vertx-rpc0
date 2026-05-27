@@ -9,7 +9,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.parsetools.RecordParser;
 import lombok.NonNull;
 
-
 /**
  * @author fishzhao
  * @since 2021-12-16

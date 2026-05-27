@@ -32,5 +32,4 @@ public final class ParameterArraySerializer extends ImmutableSerializer<Paramete
     }
     return ParameterArray.create(parameters);
   }
-
 }

@@ -1,14 +1,14 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.esotericsoftware.kryo.Kryo;
 import io.vertxrpc0.invoke.InvokeResult;
 import io.vertxrpc0.invoke.ResultCode;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.testutil.KryoRoundtrip;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class InvokeResultSerializerTest {
 

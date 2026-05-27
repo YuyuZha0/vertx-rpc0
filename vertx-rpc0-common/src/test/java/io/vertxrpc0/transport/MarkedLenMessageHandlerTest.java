@@ -1,27 +1,21 @@
 package io.vertxrpc0.transport;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.vertx.core.buffer.Buffer;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.vertx.core.buffer.Buffer;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 public class MarkedLenMessageHandlerTest {
 
   private RecordingHandler handler;
-
-  @BeforeEach
-  public void setUp() {
-    handler = new RecordingHandler();
-  }
 
   private static Buffer framed(byte[] payload) {
     ByteBuf payloadBuf = Unpooled.wrappedBuffer(payload);
@@ -33,6 +27,11 @@ public class MarkedLenMessageHandlerTest {
     } finally {
       prefixed.release();
     }
+  }
+
+  @BeforeEach
+  public void setUp() {
+    handler = new RecordingHandler();
   }
 
   @Test

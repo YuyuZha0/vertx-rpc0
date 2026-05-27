@@ -1,7 +1,6 @@
 package io.vertxrpc0.service;
 
 import io.vertx.core.Future;
-
 import java.time.LocalDateTime;
 
 /**

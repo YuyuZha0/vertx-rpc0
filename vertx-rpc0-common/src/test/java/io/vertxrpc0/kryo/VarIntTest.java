@@ -1,14 +1,13 @@
 package io.vertxrpc0.kryo;
 
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayOutputStream;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import java.io.ByteArrayOutputStream;
+import org.junit.jupiter.api.Test;
 
 public class VarIntTest {
 

@@ -3,6 +3,9 @@ package io.vertxrpc0.perf;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.vertxrpc0.kryo.KryoFactory;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -10,10 +13,6 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 /**
  * <pre>

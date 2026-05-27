@@ -2,7 +2,6 @@ package io.vertxrpc0.kryo;
 
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.Util;
-
 import java.util.Comparator;
 
 /**

@@ -1,5 +1,9 @@
 package io.vertxrpc0;
 
+import io.vertx.core.Vertx;
+import io.vertx.core.net.NetServerOptions;
+import io.vertxrpc0.server.Rpc0Server;
+import io.vertxrpc0.server.Rpc0ServerBuilder;
 import io.vertxrpc0.service.BeanService;
 import io.vertxrpc0.service.DoubleService;
 import io.vertxrpc0.service.HelloService;
@@ -13,13 +17,8 @@ import io.vertxrpc0.service.impl.StringServiceImpl;
 import io.vertxrpc0.service.impl.TimeServiceImpl;
 import io.vertxrpc0.service.impl.VoidServiceImpl;
 import io.vertxrpc0.util.ObjectMapperSupplier;
-import io.vertxrpc0.server.Rpc0Server;
-import io.vertxrpc0.server.Rpc0ServerBuilder;
-import io.vertx.core.Vertx;
-import io.vertx.core.net.NetServerOptions;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Arrays;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author fishzhao
@@ -30,7 +29,9 @@ public final class ExampleServer {
 
   public static void main(String[] args) {
     Vertx vertx = Vertx.vertx();
-    Rpc0Server rpc0Server = new Rpc0ServerBuilder(vertx, new NetServerOptions().setHost(args[0]).setPort(Integer.parseInt(args[1])))
+    Rpc0Server rpc0Server =
+        new Rpc0ServerBuilder(
+                vertx, new NetServerOptions().setHost(args[0]).setPort(Integer.parseInt(args[1])))
             .addBinding(StringService.class, new StringServiceImpl())
             .addBinding(DoubleService.class, new DoubleServiceImpl())
             .addBinding(TimeService.class, new TimeServiceImpl())
@@ -38,13 +39,16 @@ public final class ExampleServer {
             .addBinding(BeanService.class, new BeanServiceImpl(new ObjectMapperSupplier().get()))
             .addBinding(HelloService.class, new HelloServiceImpl())
             .registerTypes("io.vertxrpc0.model", false)
-            //.setMaxInactiveDuration(Duration.ofSeconds(5))
+            // .setMaxInactiveDuration(Duration.ofSeconds(5))
             .build();
-    vertx.deployVerticle(rpc0Server)
-            .onComplete(result -> {
+    vertx
+        .deployVerticle(rpc0Server)
+        .onComplete(
+            result -> {
               if (result.succeeded()) {
                 log.info("Listening on: {}", Arrays.toString(args));
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> vertx.undeploy(result.result())));
+                Runtime.getRuntime()
+                    .addShutdownHook(new Thread(() -> vertx.undeploy(result.result())));
               } else {
                 log.error("Launch server with exception: ", result.cause());
               }

@@ -27,13 +27,12 @@ public final class ServiceLookup {
     if (service == null) {
       return null;
     }
-    MethodHandle methodHandle = MethodHandles.publicLookup()
-            .findVirtual(service.getClass(),
-                    invokeSpec.getMethodName(),
-                    MethodType.methodType(Future.class, invokeSpec.getMethodType().parameterList()
-                    ));
+    MethodHandle methodHandle =
+        MethodHandles.publicLookup()
+            .findVirtual(
+                service.getClass(),
+                invokeSpec.getMethodName(),
+                MethodType.methodType(Future.class, invokeSpec.getMethodType().parameterList()));
     return methodHandle.bindTo(service);
   }
-
-
 }

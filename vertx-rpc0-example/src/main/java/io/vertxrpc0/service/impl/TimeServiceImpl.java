@@ -1,11 +1,10 @@
 package io.vertxrpc0.service.impl;
 
-import io.vertxrpc0.service.TimeService;
 import io.vertx.core.Future;
-import lombok.NonNull;
-
+import io.vertxrpc0.service.TimeService;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import lombok.NonNull;
 
 /**
  * @author fishzhao
@@ -15,9 +14,7 @@ public class TimeServiceImpl implements TimeService {
 
   @Override
   public Future<LocalDateTime> timeAfterNDays(@NonNull LocalDateTime from, int nDays) {
-    return Future.succeededFuture(
-            from.plusDays(nDays)
-    );
+    return Future.succeededFuture(from.plusDays(nDays));
   }
 
   @Override

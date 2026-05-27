@@ -11,7 +11,8 @@ import java.util.Collection;
  * @author fishzhao
  * @since 2022-01-21
  */
-public final class RestrictedCollectionSerializer<T extends Collection<?>> extends CollectionSerializer<T> {
+public final class RestrictedCollectionSerializer<T extends Collection<?>>
+    extends CollectionSerializer<T> {
 
   private final Sized<T> sized;
 

@@ -10,7 +10,6 @@ import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.minlog.Log;
 import com.google.common.collect.Ordering;
 import io.vertxrpc0.Comparators;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;

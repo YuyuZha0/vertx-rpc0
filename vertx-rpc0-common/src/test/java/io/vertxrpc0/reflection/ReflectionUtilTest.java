@@ -1,13 +1,12 @@
 package io.vertxrpc0.reflection;
 
-import io.vertx.core.Future;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.vertx.core.Future;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 public class ReflectionUtilTest {
 

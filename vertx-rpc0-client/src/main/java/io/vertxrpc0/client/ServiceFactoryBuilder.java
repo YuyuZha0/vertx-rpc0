@@ -10,13 +10,12 @@ import io.vertxrpc0.conf.ConstructingProcess;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.kryo.KryoRegistry;
 import io.vertxrpc0.transport.KryoMessageTransport;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author fishzhao

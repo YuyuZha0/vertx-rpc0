@@ -1,5 +1,8 @@
 package io.vertxrpc0;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClientOptions;
@@ -11,16 +14,12 @@ import io.vertx.junit5.VertxTestContext;
 import io.vertxrpc0.client.ServiceFactory;
 import io.vertxrpc0.client.ServiceFactoryBuilder;
 import io.vertxrpc0.service.HelloService;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(VertxExtension.class)
 @Timeout(value = 15, timeUnit = TimeUnit.SECONDS)

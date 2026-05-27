@@ -5,7 +5,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ImmutableSerializer;
 import com.google.common.primitives.Primitives;
-
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.BitSet;

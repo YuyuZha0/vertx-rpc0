@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.vertx.core.buffer.Buffer;
-import lombok.NonNull;
-
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Deque;
@@ -21,6 +19,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import lombok.NonNull;
 
 /**
  * @author fishzhao

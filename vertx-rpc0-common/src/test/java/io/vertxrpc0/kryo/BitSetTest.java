@@ -1,11 +1,10 @@
 package io.vertxrpc0.kryo;
 
-import io.netty.buffer.ByteBufUtil;
-import org.junit.jupiter.api.Test;
-
-import java.util.BitSet;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import io.netty.buffer.ByteBufUtil;
+import java.util.BitSet;
+import org.junit.jupiter.api.Test;
 
 public class BitSetTest {
 

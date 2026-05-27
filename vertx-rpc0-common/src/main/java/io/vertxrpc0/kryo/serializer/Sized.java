@@ -2,10 +2,9 @@ package io.vertxrpc0.kryo.serializer;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import lombok.NonNull;
-
 import java.util.ArrayList;
 import java.util.function.IntFunction;
+import lombok.NonNull;
 
 /**
  * @author fishzhao

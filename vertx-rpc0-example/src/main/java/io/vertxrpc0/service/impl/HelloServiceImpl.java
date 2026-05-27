@@ -1,7 +1,7 @@
 package io.vertxrpc0.service.impl;
 
-import io.vertxrpc0.service.HelloService;
 import io.vertx.core.Future;
+import io.vertxrpc0.service.HelloService;
 
 /**
  * @author fishzhao

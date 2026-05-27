@@ -1,11 +1,10 @@
 package io.vertxrpc0.kryo;
 
 import com.google.common.collect.MapMaker;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author fishzhao

@@ -1,12 +1,12 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.esotericsoftware.kryo.Kryo;
 import io.vertxrpc0.invoke.ParameterArray;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.testutil.KryoRoundtrip;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ParameterArraySerializerTest {
 
@@ -20,13 +20,13 @@ public class ParameterArraySerializerTest {
 
   @Test
   public void roundTripMixedNullAndValues() {
-    ParameterArray pa = ParameterArray.create(new Object[]{1, "two", null, 3.14d});
+    ParameterArray pa = ParameterArray.create(new Object[] {1, "two", null, 3.14d});
     assertEquals(pa, KryoRoundtrip.roundtrip(kryo, pa));
   }
 
   @Test
   public void roundTripSingleNullArg() {
-    ParameterArray pa = ParameterArray.create(new Object[]{null});
+    ParameterArray pa = ParameterArray.create(new Object[] {null});
     assertEquals(pa, KryoRoundtrip.roundtrip(kryo, pa));
   }
 }

@@ -4,13 +4,12 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import lombok.ToString;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.ToString;
 
 /**
  * Wire-safe, chainable {@link Comparator} family modeled after Guava's
@@ -48,18 +47,6 @@ public sealed abstract class Comparators<T> implements Comparator<T>
 
   protected Comparators() {}
 
-  /** The wire magic identifying this subclass. */
-  protected abstract int magic();
-
-  /** Subclass writes only its state. The magic is written by {@link #writeTo}. */
-  protected abstract void writeBody(Kryo kryo, Output output);
-
-  /** Public entry point used by {@code ComparatorSerializer}. Emits magic + state. */
-  public final void writeTo(@NonNull Kryo kryo, @NonNull Output output) {
-    output.writeVarInt(magic(), true);
-    writeBody(kryo, output);
-  }
-
   /**
    * Public entry point used by {@code ComparatorSerializer}. Reads magic + state
    * and returns a fully-constructed instance.
@@ -80,8 +67,6 @@ public sealed abstract class Comparators<T> implements Comparator<T>
     };
   }
 
-  // === Public API: leaf factories ===
-
   public static <T extends Comparable<? super T>> Comparators<T> natural() {
     return Natural.cast();
   }
@@ -94,12 +79,26 @@ public sealed abstract class Comparators<T> implements Comparator<T>
     return UsingToString.cast();
   }
 
+  // === Public API: leaf factories ===
+
   public static <T> Comparators<T> allEqual() {
     return AllEqual.cast();
   }
 
   public static <T> Comparators<T> arbitrary() {
     return Arbitrary.cast();
+  }
+
+  /** The wire magic identifying this subclass. */
+  protected abstract int magic();
+
+  /** Subclass writes only its state. The magic is written by {@link #writeTo}. */
+  protected abstract void writeBody(Kryo kryo, Output output);
+
+  /** Public entry point used by {@code ComparatorSerializer}. Emits magic + state. */
+  public final void writeTo(@NonNull Kryo kryo, @NonNull Output output) {
+    output.writeVarInt(magic(), true);
+    writeBody(kryo, output);
   }
 
   // === Public API: chain ops ===

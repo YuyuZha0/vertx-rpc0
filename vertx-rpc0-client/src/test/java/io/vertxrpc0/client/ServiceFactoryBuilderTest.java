@@ -1,19 +1,5 @@
 package io.vertxrpc0.client;
 
-import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.net.NetClientOptions;
-import io.vertx.junit5.VertxExtension;
-import io.vertx.junit5.VertxTestContext;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.lang.reflect.Field;
-import java.time.Duration;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -21,11 +7,34 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.net.NetClientOptions;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
+import java.lang.reflect.Field;
+import java.time.Duration;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 @ExtendWith(VertxExtension.class)
 public class ServiceFactoryBuilderTest {
 
-  interface DemoService {}
-  static final class NotAnInterface {}
+  private static ContextInternal readSupplierContext(ServiceFactory factory) {
+    try {
+      Field supplierField = ServiceFactory.class.getDeclaredField("proxyStubSupplier");
+      supplierField.setAccessible(true);
+      Object stubSupplier = supplierField.get(factory);
+      Field contextField = stubSupplier.getClass().getDeclaredField("context");
+      contextField.setAccessible(true);
+      return (ContextInternal) contextField.get(stubSupplier);
+    } catch (ReflectiveOperationException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   @Test
   public void registerServiceAcceptsInterface(Vertx vertx) {
@@ -65,10 +74,6 @@ public class ServiceFactoryBuilderTest {
     assertThrows(NullPointerException.class, () -> new ServiceFactoryBuilder(vertx, null, 7777));
   }
 
-  // === buildSupplier ===
-
-  interface OtherService {}
-
   @Test
   public void buildSupplierProducesFreshInstancesPerCall(Vertx vertx) {
     Supplier<ServiceFactory> supplier = new ServiceFactoryBuilder(vertx, "localhost", 7777)
@@ -80,6 +85,8 @@ public class ServiceFactoryBuilderTest {
     assertNotNull(b);
     assertNotSame(a, b);
   }
+
+  // === buildSupplier ===
 
   @Test
   public void buildSupplierSnapshotsConfig(Vertx vertx) throws Exception {
@@ -135,16 +142,9 @@ public class ServiceFactoryBuilderTest {
     })));
   }
 
-  private static ContextInternal readSupplierContext(ServiceFactory factory) {
-    try {
-      Field supplierField = ServiceFactory.class.getDeclaredField("proxyStubSupplier");
-      supplierField.setAccessible(true);
-      Object stubSupplier = supplierField.get(factory);
-      Field contextField = stubSupplier.getClass().getDeclaredField("context");
-      contextField.setAccessible(true);
-      return (ContextInternal) contextField.get(stubSupplier);
-    } catch (ReflectiveOperationException e) {
-      throw new RuntimeException(e);
-    }
-  }
+  interface DemoService {}
+
+  interface OtherService {}
+
+  static final class NotAnInterface {}
 }

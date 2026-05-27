@@ -1,12 +1,12 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static com.esotericsoftware.kryo.Kryo.NULL;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import io.netty.util.AsciiString;
-
-import static com.esotericsoftware.kryo.Kryo.NULL;
 
 /**
  * @author fishzhao

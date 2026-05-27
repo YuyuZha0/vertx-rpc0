@@ -1,5 +1,9 @@
 package io.vertxrpc0;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.collect.ImmutableMap;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.Checkpoint;
@@ -14,19 +18,14 @@ import io.vertxrpc0.service.StringService;
 import io.vertxrpc0.service.TimeService;
 import io.vertxrpc0.service.VoidService;
 import io.vertxrpc0.testutil.Rpc0TestHarness;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(VertxExtension.class)
 @Timeout(value = 30, timeUnit = TimeUnit.SECONDS)

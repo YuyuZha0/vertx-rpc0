@@ -1,10 +1,9 @@
 package io.vertxrpc0.service.impl;
 
-import io.vertxrpc0.service.DoubleService;
 import io.vertx.core.Future;
-import lombok.NonNull;
-
+import io.vertxrpc0.service.DoubleService;
 import java.util.Arrays;
+import lombok.NonNull;
 
 /**
  * @author fishzhao

@@ -1,5 +1,11 @@
 package io.vertxrpc0.kryo.serializer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
@@ -7,9 +13,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Ordering;
 import io.vertxrpc0.Comparators;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -18,12 +21,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ToIntFunction;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Test;
 
 public class ComparatorSerializerTest {
 
@@ -62,6 +61,22 @@ public class ComparatorSerializerTest {
   // The pre-existing JDK/Guava singleton tags (1..6) still work in safe mode.
   // ---------------------------------------------------------------------------
 
+  private static <T> void sortsTheSame(Comparator<? super T> expected,
+                                       Comparator<?> actual,
+                                       List<T> sample) {
+    @SuppressWarnings("unchecked")
+    Comparator<? super T> coerced = (Comparator<? super T>) actual;
+    List<T> a = new ArrayList<>(sample);
+    List<T> b = new ArrayList<>(sample);
+    a.sort(expected);
+    b.sort(coerced);
+    assertEquals(a, b, "round-tripped comparator must order the sample identically");
+  }
+
+  // ---------------------------------------------------------------------------
+  // Safe-mode rejection — out-of-scope inputs throw, no silent null.
+  // ---------------------------------------------------------------------------
+
   @Test
   public void verifyStaticSingletonsRoundTripInSafeMode() {
     assertEquals(Comparator.naturalOrder(), roundtrip(safeKryo, Comparator.naturalOrder()));
@@ -72,10 +87,6 @@ public class ComparatorSerializerTest {
     assertEquals(Ordering.usingToString(), roundtrip(safeKryo, Ordering.usingToString()));
     assertNull(roundtrip(safeKryo, (Comparator<?>) null));
   }
-
-  // ---------------------------------------------------------------------------
-  // Safe-mode rejection — out-of-scope inputs throw, no silent null.
-  // ---------------------------------------------------------------------------
 
   @Test
   public void safeModeRejectsExplicitOrdering() {
@@ -101,6 +112,10 @@ public class ComparatorSerializerTest {
     assertThrows(KryoException.class, () -> roundtrip(safeKryo, anon));
   }
 
+  // ---------------------------------------------------------------------------
+  // The trustUnsafe escape hatch keeps working for Serializable inputs.
+  // ---------------------------------------------------------------------------
+
   /**
    * Hostile captured-lambda payload must never reach the deserializer in safe mode —
    * the body must not even have a chance to execute.
@@ -116,10 +131,6 @@ public class ComparatorSerializerTest {
     assertThrows(KryoException.class, () -> roundtrip(safeKryo, hostile));
     assertEquals(0, sideEffect.get());
   }
-
-  // ---------------------------------------------------------------------------
-  // The trustUnsafe escape hatch keeps working for Serializable inputs.
-  // ---------------------------------------------------------------------------
 
   @Test
   public void unsafeModeRoundTripsSerializableLambda() {
@@ -138,6 +149,10 @@ public class ComparatorSerializerTest {
     assertEquals(explicit, back);
   }
 
+  // ---------------------------------------------------------------------------
+  // New chainable Comparators API — safe in both modes.
+  // ---------------------------------------------------------------------------
+
   @Test
   public void unsafeModeStillRejectsNonSerializableAnonymous() {
     Comparator<String> anon = new Comparator<>() {
@@ -148,10 +163,6 @@ public class ComparatorSerializerTest {
     };
     assertThrows(KryoException.class, () -> roundtrip(unsafeKryo, anon));
   }
-
-  // ---------------------------------------------------------------------------
-  // New chainable Comparators API — safe in both modes.
-  // ---------------------------------------------------------------------------
 
   @Test
   public void chainableLeafSingletonsRoundTripWithIdentityPreserved() {
@@ -191,6 +202,10 @@ public class ComparatorSerializerTest {
     sortsTheSame(c, roundtrip(safeKryo, c), List.of(10, 2, 33, 4, 5));
   }
 
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
   @Test
   public void chainableNestedRoundTrip() {
     Comparators<Integer> nested = Comparators.<Integer>natural()
@@ -199,21 +214,5 @@ public class ComparatorSerializerTest {
             .nullsFirst();
     assertEquals(nested, roundtrip(safeKryo, nested));
     sortsTheSame(nested, roundtrip(safeKryo, nested), Arrays.asList(3, null, 1, 2));
-  }
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  private static <T> void sortsTheSame(Comparator<? super T> expected,
-                                       Comparator<?> actual,
-                                       List<T> sample) {
-    @SuppressWarnings("unchecked")
-    Comparator<? super T> coerced = (Comparator<? super T>) actual;
-    List<T> a = new ArrayList<>(sample);
-    List<T> b = new ArrayList<>(sample);
-    a.sort(expected);
-    b.sort(coerced);
-    assertEquals(a, b, "round-tripped comparator must order the sample identically");
   }
 }
