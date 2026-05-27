@@ -11,14 +11,12 @@ import com.esotericsoftware.kryo.KryoException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.util.concurrent.FastThreadLocal;
 import io.vertxrpc0.invoke.InvokeResult;
 import io.vertxrpc0.invoke.InvokeSpec;
 import io.vertxrpc0.invoke.ParameterArray;
 import io.vertxrpc0.invoke.ResultCode;
 import io.vertxrpc0.kryo.KryoFactory;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
 import java.util.concurrent.ArrayBlockingQueue;
 import org.junit.jupiter.api.Test;
 
@@ -26,23 +24,20 @@ public class KryoMessageTransportTest {
 
   private final KryoMessageTransport transport = new KryoMessageTransport(new KryoFactory());
 
-  @SuppressWarnings("unchecked")
   private static Kryo readKryoForCurrentThread(KryoMessageTransport t) {
-    try {
-      Field field = KryoMessageTransport.class.getDeclaredField("kryoFastThreadLocal");
-      field.setAccessible(true);
-      FastThreadLocal<Kryo> ftl = (FastThreadLocal<Kryo>) field.get(t);
-      return ftl.get();
-    } catch (ReflectiveOperationException e) {
-      throw new RuntimeException(e);
-    }
+    return t.getKryo();
   }
 
   @Test
   public void roundTripInvokeSpec() {
-    InvokeSpec spec = new InvokeSpec(7, 123L, "io.example.Svc", "hello",
+    InvokeSpec spec =
+        new InvokeSpec(
+            7,
+            123L,
+            "io.example.Svc",
+            "hello",
             MethodType.methodType(String.class, String.class),
-            ParameterArray.create(new Object[]{"world"}));
+            ParameterArray.create(new Object[] {"world"}));
 
     ByteBuf bytes = transport.serialize(spec);
     InvokeSpec back = (InvokeSpec) transport.deserialize(bytes);
@@ -97,14 +92,16 @@ public class KryoMessageTransportTest {
     assertNotNull(thisThread);
 
     ArrayBlockingQueue<Kryo> sink = new ArrayBlockingQueue<>(1);
-    Thread other = new Thread(() -> {
-      t.serialize(sample).release();
-      try {
-        sink.put(readKryoForCurrentThread(t));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-    });
+    Thread other =
+        new Thread(
+            () -> {
+              t.serialize(sample).release();
+              try {
+                sink.put(readKryoForCurrentThread(t));
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            });
     other.start();
     other.join();
     assertNotSame(thisThread, sink.poll());

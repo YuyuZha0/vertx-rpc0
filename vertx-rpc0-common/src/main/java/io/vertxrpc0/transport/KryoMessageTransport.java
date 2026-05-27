@@ -4,6 +4,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.annotations.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
@@ -26,20 +27,22 @@ public final class KryoMessageTransport implements MessageTransport {
   private final FastThreadLocal<Kryo> kryoFastThreadLocal;
 
   public KryoMessageTransport(@NonNull Supplier<? extends Kryo> factory) {
-    this.kryoFastThreadLocal = new FastThreadLocal<>() {
-      @Override
-      protected Kryo initialValue() {
-        return Objects.requireNonNull(factory.get(), "null kryo from factory");
-      }
+    this.kryoFastThreadLocal =
+        new FastThreadLocal<>() {
+          @Override
+          protected Kryo initialValue() {
+            return Objects.requireNonNull(factory.get(), "null kryo from factory");
+          }
 
-      @Override
-      protected void onRemoval(Kryo value) {
-        value.reset();
-      }
-    };
+          @Override
+          protected void onRemoval(Kryo value) {
+            value.reset();
+          }
+        };
   }
 
-  private Kryo getKryo() {
+  @VisibleForTesting
+  Kryo getKryo() {
     return kryoFastThreadLocal.get();
   }
 
