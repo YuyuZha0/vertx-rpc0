@@ -8,6 +8,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import io.vertx.core.buffer.Buffer;
+import io.vertxrpc0.transport.BufferUtil;
 import java.io.IOException;
 
 /**
@@ -30,7 +31,7 @@ public final class BufferSerializer extends Serializer<Buffer> {
     output.writeVarInt(length + 1, true);
     if (length > 0) {
       try {
-        object.getByteBuf().readBytes(output, length);
+        BufferUtil.toByteBuf(object).readBytes(output, length);
       } catch (IOException e) {
         throw new KryoException(e);
       }
@@ -43,6 +44,6 @@ public final class BufferSerializer extends Serializer<Buffer> {
     if (length == NULL) {
       return null;
     }
-    return Buffer.buffer(input.readBytes(length - 1));
+    return BufferUtil.fromBytes(input.readBytes(length - 1));
   }
 }

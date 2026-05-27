@@ -18,6 +18,7 @@ import io.vertx.core.net.impl.NetSocketInternal;
 import io.vertxrpc0.invoke.InvokeResult;
 import io.vertxrpc0.invoke.InvokeSpec;
 import io.vertxrpc0.invoke.ResultCode;
+import io.vertxrpc0.transport.BufferUtil;
 import io.vertxrpc0.transport.MarkedLenMessageHandler;
 import io.vertxrpc0.transport.MessageTransport;
 import io.vertxrpc0.transport.ParserHandler;
@@ -102,7 +103,7 @@ final class ServiceInvoker implements ParserHandler {
   // This method associated with the same event-loop, so it's thread-safe
   @Override
   public void handle(Buffer event) {
-    InvokeSpec invokeSpec = (InvokeSpec) messageTransport.deserialize(event.getByteBuf());
+    InvokeSpec invokeSpec = (InvokeSpec) messageTransport.deserialize(BufferUtil.toByteBuf(event));
     long requestId = invokeSpec.getRequestId();
     if (!invokeSpec.getParameters().isTypeMatch(invokeSpec.getMethodType())) {
       fail(requestId, ResultCode.PARAMETER_ERROR,
@@ -190,7 +191,7 @@ final class ServiceInvoker implements ParserHandler {
   private void writeResult(InvokeResult result, Promise<Void> promise) {
     lastActiveTime.set(result.getTimestamp());
     ByteBuf byteBuf = Prefix.prependTo(messageTransport.serialize(alloc(), result));
-    socket.write(Buffer.buffer(byteBuf)).onComplete(ar -> {
+    socket.write(BufferUtil.fromByteBuf(byteBuf)).onComplete(ar -> {
       // NetSocket.write does not release the wrapped ByteBuf — see
       // NetSocketByteBufOwnershipTest. Release it explicitly to avoid leaking
       // pooled allocator memory.

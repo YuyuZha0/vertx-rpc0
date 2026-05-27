@@ -13,6 +13,7 @@ import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.impl.NetSocketInternal;
 import io.vertxrpc0.invoke.InvokeResult;
 import io.vertxrpc0.invoke.InvokeSpec;
+import io.vertxrpc0.transport.BufferUtil;
 import io.vertxrpc0.transport.MarkedLenMessageHandler;
 import io.vertxrpc0.transport.MessageTransport;
 import io.vertxrpc0.transport.ParserHandler;
@@ -86,7 +87,7 @@ final class ProxyStub implements ParserHandler, Closeable {
       old.tryFail("Duplicated requestId: " + requestId);
     }
     socket
-        .write(Buffer.buffer(request))
+        .write(BufferUtil.fromByteBuf(request))
         .onComplete(
             result -> {
               // NetSocket.write does not release the wrapped ByteBuf — see
@@ -123,7 +124,7 @@ final class ProxyStub implements ParserHandler, Closeable {
 
   @Override
   public void handle(Buffer buffer) {
-    ByteBuf byteBuf = buffer.getByteBuf();
+    ByteBuf byteBuf = BufferUtil.toByteBuf(buffer);
     try {
       InvokeResult result = (InvokeResult) messageTransport.deserialize(byteBuf);
       Promise<InvokeResult> promise = resultMap.remove(result.getRequestId());
