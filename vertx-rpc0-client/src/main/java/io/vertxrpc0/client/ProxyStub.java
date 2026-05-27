@@ -7,6 +7,7 @@ import io.vertxrpc0.transport.MessageTransport;
 import io.vertxrpc0.transport.ParserHandler;
 import io.vertxrpc0.transport.Prefix;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timer;
 import io.vertx.core.Closeable;
@@ -14,6 +15,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.VertxException;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.impl.NetSocketInternal;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +37,15 @@ final class ProxyStub implements ParserHandler, Closeable {
 
   private final AtomicBoolean closed = new AtomicBoolean(false);
   private final ConcurrentMap<Long, Promise<InvokeResult>> resultMap = new ConcurrentHashMap<>();
-  private final NetSocketInternal socket;
+  private final NetSocket socket;
   private final MessageTransport messageTransport;
   private final Timer timer;
   private final Duration timeout;
+
+  /** The {@link ByteBufAllocator} from the underlying channel — the only spot that needs the internal API. */
+  private ByteBufAllocator alloc() {
+    return ((NetSocketInternal) socket).channelHandlerContext().alloc();
+  }
 
   boolean isClosed() {
     return closed.get();
@@ -65,8 +72,7 @@ final class ProxyStub implements ParserHandler, Closeable {
     }
     ByteBuf request;
     try {
-      request = Prefix.prependTo(messageTransport
-              .serialize(socket.channelHandlerContext().alloc(), invokeSpec));
+      request = Prefix.prependTo(messageTransport.serialize(alloc(), invokeSpec));
     } catch (Exception e) {
       promise.fail(e);
       return promise.future();
@@ -76,7 +82,10 @@ final class ProxyStub implements ParserHandler, Closeable {
     if (old != null) {
       old.tryFail("Duplicated requestId: " + requestId);
     }
-    socket.write(Buffer.buffer(request), result -> {
+    socket.write(Buffer.buffer(request)).onComplete(result -> {
+      // NetSocket.write does not release the wrapped ByteBuf — see
+      // NetSocketByteBufOwnershipTest. Release it explicitly here.
+      ReferenceCountUtil.release(request);
       if (result.succeeded()) {
         registerTimeout(requestId);
       } else {
@@ -120,7 +129,7 @@ final class ProxyStub implements ParserHandler, Closeable {
   @Override
   public void close(Promise<Void> completion) {
     if (closed.compareAndSet(false, true)) {
-      socket.close(completion);
+      socket.close().onComplete(completion);
     } else {
       completion.fail("ProxyStub already closed!");
     }

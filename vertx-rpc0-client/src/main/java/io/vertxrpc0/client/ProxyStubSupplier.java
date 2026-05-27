@@ -9,7 +9,6 @@ import io.vertx.core.Promise;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
-import io.vertx.core.net.impl.NetSocketInternal;
 import io.vertxrpc0.transport.MessageTransport;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -123,7 +122,7 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
       if (result.succeeded()) {
         NetSocket socket = result.result();
         try {
-          ProxyStub stub = new ProxyStub((NetSocketInternal) socket, messageTransport, timer, timeout);
+          ProxyStub stub = new ProxyStub(socket, messageTransport, timer, timeout);
           stub.registerHandlers(() -> onConnectionDispose(newFuture));
           consecutiveFailures = 0;
           log.info("Open connection to [{}] successfully", socket.remoteAddress());

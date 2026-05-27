@@ -13,10 +13,13 @@ import io.vertxrpc0.transport.Prefix;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.ReferenceCountUtil;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.NetSocketInternal;
 import lombok.AccessLevel;
@@ -40,9 +43,14 @@ final class ServiceInvoker implements ParserHandler {
   private final TLongSet acceptedRequestIdSet = new TLongHashSet();
   private final AtomicLong lastActiveTime = new AtomicLong(System.currentTimeMillis());
   @Getter(AccessLevel.PACKAGE)
-  private final NetSocketInternal socket;
+  private final NetSocket socket;
   private final MessageTransport messageTransport;
   private final ServiceLookup serviceLookup;
+
+  /** The {@link ByteBufAllocator} from the underlying channel — the only spot that needs the internal API. */
+  private ByteBufAllocator alloc() {
+    return ((NetSocketInternal) socket).channelHandlerContext().alloc();
+  }
 
   private static String buildErrorMessage(Throwable cause) {
     return Strings.lenientFormat("%s(\"%s\")",
@@ -66,7 +74,7 @@ final class ServiceInvoker implements ParserHandler {
 
   @Override
   public void fatal(Throwable cause) {
-    log.error("Fetal error on [{}]: ", socket.remoteAddress(), cause);
+    log.error("Fatal error on [{}]: ", socket.remoteAddress(), cause);
     ResultCode resultCode = cause instanceof KryoException
             ? ResultCode.PROTOCOL_ERROR : ResultCode.UNKNOWN_ERROR;
     if (acceptedRequestIdSet.isEmpty()) {
@@ -182,10 +190,13 @@ final class ServiceInvoker implements ParserHandler {
 
   private void writeResult(InvokeResult result, Promise<Void> promise) {
     lastActiveTime.set(result.getTimestamp());
-    ByteBuf byteBuf = Prefix.prependTo(messageTransport
-            .serialize(socket.channelHandlerContext().alloc(), result));
-    socket.write(Buffer.buffer(byteBuf), ar -> {
-      //On the socket context, it's thread-safe
+    ByteBuf byteBuf = Prefix.prependTo(messageTransport.serialize(alloc(), result));
+    socket.write(Buffer.buffer(byteBuf)).onComplete(ar -> {
+      // NetSocket.write does not release the wrapped ByteBuf — see
+      // NetSocketByteBufOwnershipTest. Release it explicitly to avoid leaking
+      // pooled allocator memory.
+      ReferenceCountUtil.release(byteBuf);
+      // On the socket context, so this is thread-safe.
       acceptedRequestIdSet.remove(result.getRequestId());
       if (promise != null) {
         promise.handle(ar);
