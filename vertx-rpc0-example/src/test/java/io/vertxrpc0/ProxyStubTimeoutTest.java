@@ -32,41 +32,63 @@ public class ProxyStubTimeoutTest {
   public void setUp(Vertx vertx, VertxTestContext ctx) {
     // A TCP server that accepts connections but never replies — clients should time out.
     NetServer s = vertx.createNetServer(new NetServerOptions().setHost("127.0.0.1").setPort(0));
-    s.connectHandler(sock -> { /* deliberately silent */ });
-    s.listen().onComplete(ctx.succeeding(listening -> {
-      silentServer = listening;
-      factory = new ServiceFactoryBuilder(vertx, "127.0.0.1", listening.actualPort(),
-              new NetClientOptions(), Duration.ofMillis(300), Vertx.class.getClassLoader())
-              .registerService(HelloService.class)
-              .build();
-      ctx.completeNow();
-    }));
+    s.connectHandler(
+        sock -> {
+          /* deliberately silent */
+        });
+    s.listen()
+        .onComplete(
+            ctx.succeeding(
+                listening -> {
+                  silentServer = listening;
+                  factory =
+                      new ServiceFactoryBuilder(
+                              vertx,
+                              "127.0.0.1",
+                              listening.actualPort(),
+                              new NetClientOptions(),
+                              Duration.ofMillis(300),
+                              Vertx.class.getClassLoader())
+                          .registerService(HelloService.class)
+                          .build();
+                  ctx.completeNow();
+                }));
   }
 
   @AfterEach
   public void tearDown(VertxTestContext ctx) {
     Promise<Void> factoryClose = Promise.promise();
     factory.close(factoryClose);
-    factoryClose.future()
-            .recover(t -> io.vertx.core.Future.succeededFuture())
-            .compose(v -> silentServer.close())
-            .onComplete(ctx.succeedingThenComplete());
+    factoryClose
+        .future()
+        .recover(t -> io.vertx.core.Future.succeededFuture())
+        .compose(v -> silentServer.close())
+        .onComplete(ctx.succeedingThenComplete());
   }
 
   @Test
   public void rpcCallFailsWithTimeoutMessage(VertxTestContext ctx) {
     HelloService hello = factory.create(HelloService.class);
     long start = System.currentTimeMillis();
-    hello.sayHello("test").onComplete(ctx.failing(cause -> {
-      long elapsed = System.currentTimeMillis() - start;
-      ctx.verify(() -> {
-        assertNotNull(cause);
-        assertTrue(cause.getMessage().toLowerCase().contains("timeout"),
-                () -> "expected 'Timeout' in failure message, got: " + cause.getMessage());
-        assertTrue(elapsed >= 250 && elapsed < 3000,
-                () -> "elapsed=" + elapsed + " should be close to the 300ms timeout");
-      });
-      ctx.completeNow();
-    }));
+    hello
+        .sayHello("test")
+        .onComplete(
+            ctx.failing(
+                cause -> {
+                  long elapsed = System.currentTimeMillis() - start;
+                  ctx.verify(
+                      () -> {
+                        assertNotNull(cause);
+                        assertTrue(
+                            cause.getMessage().toLowerCase().contains("timeout"),
+                            () ->
+                                "expected 'Timeout' in failure message, got: "
+                                    + cause.getMessage());
+                        assertTrue(
+                            elapsed >= 250 && elapsed < 3000,
+                            () -> "elapsed=" + elapsed + " should be close to the 300ms timeout");
+                      });
+                  ctx.completeNow();
+                }));
   }
 }

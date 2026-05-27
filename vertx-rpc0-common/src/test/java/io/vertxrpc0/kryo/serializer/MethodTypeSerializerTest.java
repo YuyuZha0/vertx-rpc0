@@ -44,7 +44,8 @@ public class MethodTypeSerializerTest {
 
   @Test
   public void roundTripMixedPrimitiveAndReferenceArgs() {
-    MethodType type = MethodType.methodType(String.class, int.class, Object.class, double.class, String.class);
+    MethodType type =
+        MethodType.methodType(String.class, int.class, Object.class, double.class, String.class);
     assertEquals(type, kryoRoundTrip(type));
   }
 
@@ -53,8 +54,7 @@ public class MethodTypeSerializerTest {
     MethodType type = MethodType.methodType(int.class, String.class);
     MethodType copy = kryoRoundTrip(type);
 
-    MethodHandle handle = MethodHandles.publicLookup()
-            .findVirtual(String.class, "indexOf", copy);
+    MethodHandle handle = MethodHandles.publicLookup().findVirtual(String.class, "indexOf", copy);
     assertEquals(2, (int) handle.invoke("Hello", "ll"));
   }
 }

@@ -57,5 +57,4 @@ public final class MethodTypeSerializer extends ImmutableSerializer<MethodType> 
       return Primitives.wrap(type);
     }
   }
-
 }

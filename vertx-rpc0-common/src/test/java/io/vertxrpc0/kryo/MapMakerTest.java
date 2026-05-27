@@ -12,9 +12,10 @@ import org.junit.jupiter.api.Test;
  */
 public class MapMakerTest {
 
-  private final Map<Integer, Double> concurrentMap = new MapMaker()
-          .concurrencyLevel(3).weakKeys().makeMap();
-//private final Map<Integer, Double> concurrentMap = new WeakHashMap<>();
+  private final Map<Integer, Double> concurrentMap =
+      new MapMaker().concurrencyLevel(3).weakKeys().makeMap();
+
+  // private final Map<Integer, Double> concurrentMap = new WeakHashMap<>();
 
   @Test
   @Disabled

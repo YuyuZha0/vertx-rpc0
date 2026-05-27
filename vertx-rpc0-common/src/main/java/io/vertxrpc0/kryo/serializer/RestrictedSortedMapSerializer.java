@@ -12,7 +12,8 @@ import lombok.NonNull;
  * @author fishzhao
  * @since 2022-01-21
  */
-public final class RestrictedSortedMapSerializer<T extends SortedMap<?, ?>> extends MapSerializer<T> {
+public final class RestrictedSortedMapSerializer<T extends SortedMap<?, ?>>
+    extends MapSerializer<T> {
 
   private final Sorted<T> sorted;
 
@@ -30,8 +31,7 @@ public final class RestrictedSortedMapSerializer<T extends SortedMap<?, ?>> exte
 
   @SuppressWarnings("unchecked")
   protected T createCopy(Kryo kryo, T original) {
-    return sorted.newInstance(kryo, (Class<? extends T>) original.getClass(), original.comparator());
+    return sorted.newInstance(
+        kryo, (Class<? extends T>) original.getClass(), original.comparator());
   }
-
-
 }

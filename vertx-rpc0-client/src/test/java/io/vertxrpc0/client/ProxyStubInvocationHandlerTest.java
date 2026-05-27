@@ -41,130 +41,155 @@ public class ProxyStubInvocationHandlerTest {
   @Test
   public void rejectsNonFutureReturnType(Vertx vertx) throws Exception {
     ProxyStubInvocationHandler handler =
-            new ProxyStubInvocationHandler((VertxInternal) vertx, mockSupplier());
+        new ProxyStubInvocationHandler((VertxInternal) vertx, mockSupplier());
     Method m = method(SyncService.class, "hello");
-    assertThrows(UnsupportedOperationException.class,
-            () -> handler.invoke(null, m, new Object[]{"x"}));
+    assertThrows(
+        UnsupportedOperationException.class, () -> handler.invoke(null, m, new Object[] {"x"}));
   }
 
   @Test
-  public void supplierFailurePropagatesToReturnedFuture(Vertx vertx, VertxTestContext ctx) throws Exception {
+  public void supplierFailurePropagatesToReturnedFuture(Vertx vertx, VertxTestContext ctx)
+      throws Exception {
     RuntimeException boom = new RuntimeException("no-stub");
     Supplier<Future<ProxyStub>> supplier = mockSupplier();
     Mockito.when(supplier.get()).thenReturn(Future.failedFuture(boom));
 
     ProxyStubInvocationHandler handler =
-            new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
-    Future<?> ret = (Future<?>) handler.invoke(
-            null, method(AsyncService.class, "hello"), new Object[]{"world"});
+        new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
+    Future<?> ret =
+        (Future<?>)
+            handler.invoke(null, method(AsyncService.class, "hello"), new Object[] {"world"});
 
-    ret.onComplete(ctx.failing(cause -> ctx.verify(() -> {
-      assertEquals(boom, cause);
-      ctx.completeNow();
-    })));
+    ret.onComplete(
+        ctx.failing(
+            cause ->
+                ctx.verify(
+                    () -> {
+                      assertEquals(boom, cause);
+                      ctx.completeNow();
+                    })));
   }
 
   @Test
   public void okResultIsResolved(Vertx vertx, VertxTestContext ctx) throws Exception {
     ProxyStub stub = Mockito.mock(ProxyStub.class);
     Mockito.when(stub.call(Mockito.any(InvokeSpec.class)))
-            .thenAnswer(inv -> Future.succeededFuture(
-                    new InvokeResult(1, 0L, ResultCode.OK, "", "hi-world")));
+        .thenAnswer(
+            inv -> Future.succeededFuture(new InvokeResult(1, 0L, ResultCode.OK, "", "hi-world")));
 
     Supplier<Future<ProxyStub>> supplier = mockSupplier();
     Mockito.when(supplier.get()).thenReturn(Future.succeededFuture(stub));
 
     ProxyStubInvocationHandler handler =
-            new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
-    Future<?> ret = (Future<?>) handler.invoke(
-            null, method(AsyncService.class, "hello"), new Object[]{"world"});
+        new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
+    Future<?> ret =
+        (Future<?>)
+            handler.invoke(null, method(AsyncService.class, "hello"), new Object[] {"world"});
 
-    ret.onComplete(ctx.succeeding(result -> ctx.verify(() -> {
-      assertEquals("hi-world", result);
-      ctx.completeNow();
-    })));
+    ret.onComplete(
+        ctx.succeeding(
+            result ->
+                ctx.verify(
+                    () -> {
+                      assertEquals("hi-world", result);
+                      ctx.completeNow();
+                    })));
   }
 
   @Test
   public void errorCodePropagatesAsFailure(Vertx vertx, VertxTestContext ctx) throws Exception {
     ProxyStub stub = Mockito.mock(ProxyStub.class);
     Mockito.when(stub.call(Mockito.any(InvokeSpec.class)))
-            .thenAnswer(inv -> Future.succeededFuture(
+        .thenAnswer(
+            inv ->
+                Future.succeededFuture(
                     new InvokeResult(1, 0L, ResultCode.INVOCATION_ERROR, "boom!", null)));
 
     Supplier<Future<ProxyStub>> supplier = mockSupplier();
     Mockito.when(supplier.get()).thenReturn(Future.succeededFuture(stub));
 
     ProxyStubInvocationHandler handler =
-            new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
-    Future<?> ret = (Future<?>) handler.invoke(
-            null, method(AsyncService.class, "hello"), new Object[]{"world"});
+        new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
+    Future<?> ret =
+        (Future<?>)
+            handler.invoke(null, method(AsyncService.class, "hello"), new Object[] {"world"});
 
-    ret.onComplete(ctx.failing(cause -> ctx.verify(() -> {
-      assertEquals("boom!", cause.getMessage());
-      ctx.completeNow();
-    })));
+    ret.onComplete(
+        ctx.failing(
+            cause ->
+                ctx.verify(
+                    () -> {
+                      assertEquals("boom!", cause.getMessage());
+                      ctx.completeNow();
+                    })));
   }
 
   @Test
   public void mismatchResultTypeIsRejected(Vertx vertx, VertxTestContext ctx) throws Exception {
     ProxyStub stub = Mockito.mock(ProxyStub.class);
     Mockito.when(stub.call(Mockito.any(InvokeSpec.class)))
-            .thenAnswer(inv -> Future.succeededFuture(
-                    new InvokeResult(1, 0L, ResultCode.OK, "", 42L)));
+        .thenAnswer(inv -> Future.succeededFuture(new InvokeResult(1, 0L, ResultCode.OK, "", 42L)));
 
     Supplier<Future<ProxyStub>> supplier = mockSupplier();
     Mockito.when(supplier.get()).thenReturn(Future.succeededFuture(stub));
 
     ProxyStubInvocationHandler handler =
-            new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
-    Future<?> ret = (Future<?>) handler.invoke(
-            null, method(AsyncService.class, "hello"), new Object[]{"world"});
+        new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
+    Future<?> ret =
+        (Future<?>)
+            handler.invoke(null, method(AsyncService.class, "hello"), new Object[] {"world"});
 
-    ret.onComplete(ctx.failing(cause -> ctx.verify(() -> {
-      assertTrue(cause.getMessage().contains("Mismatch result type"));
-      ctx.completeNow();
-    })));
+    ret.onComplete(
+        ctx.failing(
+            cause ->
+                ctx.verify(
+                    () -> {
+                      assertTrue(cause.getMessage().contains("Mismatch result type"));
+                      ctx.completeNow();
+                    })));
   }
 
   @Test
   public void invokeSendsSpecToProxyStub(Vertx vertx, VertxTestContext ctx) throws Exception {
     ProxyStub stub = Mockito.mock(ProxyStub.class);
     Mockito.when(stub.call(Mockito.any(InvokeSpec.class)))
-            .thenAnswer(inv -> Future.succeededFuture(
-                    new InvokeResult(1, 0L, ResultCode.OK, "", 7)));
+        .thenAnswer(inv -> Future.succeededFuture(new InvokeResult(1, 0L, ResultCode.OK, "", 7)));
 
     Supplier<Future<ProxyStub>> supplier = mockSupplier();
     Mockito.when(supplier.get()).thenReturn(Future.succeededFuture(stub));
 
     ProxyStubInvocationHandler handler =
-            new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
-    Future<?> ret = (Future<?>) handler.invoke(
-            null, method(AsyncService.class, "count"), new Object[]{});
+        new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
+    Future<?> ret =
+        (Future<?>) handler.invoke(null, method(AsyncService.class, "count"), new Object[] {});
 
-    ret.onComplete(ctx.succeeding(result -> ctx.verify(() -> {
-      ArgumentCaptor<InvokeSpec> captor = ArgumentCaptor.forClass(InvokeSpec.class);
-      Mockito.verify(stub).call(captor.capture());
-      InvokeSpec spec = captor.getValue();
-      assertEquals("count", spec.getMethodName());
-      assertEquals(AsyncService.class.getTypeName(), spec.getCallSiteClassName());
-      assertEquals(0, spec.getParameters().size());
-      ctx.completeNow();
-    })));
+    ret.onComplete(
+        ctx.succeeding(
+            result ->
+                ctx.verify(
+                    () -> {
+                      ArgumentCaptor<InvokeSpec> captor = ArgumentCaptor.forClass(InvokeSpec.class);
+                      Mockito.verify(stub).call(captor.capture());
+                      InvokeSpec spec = captor.getValue();
+                      assertEquals("count", spec.getMethodName());
+                      assertEquals(AsyncService.class.getTypeName(), spec.getCallSiteClassName());
+                      assertEquals(0, spec.getParameters().size());
+                      ctx.completeNow();
+                    })));
   }
 
   @Test
   public void objectMethodsAreHandledLocallyNotRpc(Vertx vertx) throws Exception {
     Supplier<Future<ProxyStub>> supplier = mockSupplier();
     ProxyStubInvocationHandler handler =
-            new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
+        new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
 
     Object proxy = new Object();
     Object hashCode = handler.invoke(proxy, Object.class.getMethod("hashCode"), null);
     assertTrue(hashCode instanceof Integer);
 
-    Object eqSelf = handler.invoke(
-            proxy, Object.class.getMethod("equals", Object.class), new Object[]{proxy});
+    Object eqSelf =
+        handler.invoke(proxy, Object.class.getMethod("equals", Object.class), new Object[] {proxy});
     assertEquals(Boolean.TRUE, eqSelf);
 
     Mockito.verifyNoInteractions(supplier);
@@ -174,21 +199,25 @@ public class ProxyStubInvocationHandlerTest {
   public void nullResultIsAllowed(Vertx vertx, VertxTestContext ctx) throws Exception {
     ProxyStub stub = Mockito.mock(ProxyStub.class);
     Mockito.when(stub.call(Mockito.any(InvokeSpec.class)))
-            .thenAnswer(inv -> Future.succeededFuture(
-                    new InvokeResult(1, 0L, ResultCode.OK, "", null)));
+        .thenAnswer(
+            inv -> Future.succeededFuture(new InvokeResult(1, 0L, ResultCode.OK, "", null)));
 
     Supplier<Future<ProxyStub>> supplier = mockSupplier();
     Mockito.when(supplier.get()).thenReturn(Future.succeededFuture(stub));
 
     ProxyStubInvocationHandler handler =
-            new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
-    Future<?> ret = (Future<?>) handler.invoke(
-            null, method(AsyncService.class, "hello"), new Object[]{"x"});
+        new ProxyStubInvocationHandler((VertxInternal) vertx, supplier);
+    Future<?> ret =
+        (Future<?>) handler.invoke(null, method(AsyncService.class, "hello"), new Object[] {"x"});
 
-    ret.onComplete(ctx.succeeding(result -> ctx.verify(() -> {
-      assertNull(result);
-      ctx.completeNow();
-    })));
+    ret.onComplete(
+        ctx.succeeding(
+            result ->
+                ctx.verify(
+                    () -> {
+                      assertNull(result);
+                      ctx.completeNow();
+                    })));
   }
 
   interface AsyncService {

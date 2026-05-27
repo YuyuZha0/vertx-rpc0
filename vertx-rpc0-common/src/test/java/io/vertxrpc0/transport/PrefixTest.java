@@ -65,14 +65,14 @@ public class PrefixTest {
 
   @Test
   public void isMagicMatchRejectsBadBytes() {
-    assertFalse(Prefix.isMagicMatch(new byte[]{0, 0}));
-    assertFalse(Prefix.isMagicMatch(new byte[]{(byte) 0xff, (byte) 0xff}));
+    assertFalse(Prefix.isMagicMatch(new byte[] {0, 0}));
+    assertFalse(Prefix.isMagicMatch(new byte[] {(byte) 0xff, (byte) 0xff}));
   }
 
   @Test
   public void isMagicMatchRejectsWrongLength() {
-    assertFalse(Prefix.isMagicMatch(new byte[]{}));
-    assertFalse(Prefix.isMagicMatch(new byte[]{0}));
-    assertFalse(Prefix.isMagicMatch(new byte[]{0, 0, 0}));
+    assertFalse(Prefix.isMagicMatch(new byte[] {}));
+    assertFalse(Prefix.isMagicMatch(new byte[] {0}));
+    assertFalse(Prefix.isMagicMatch(new byte[] {0, 0, 0}));
   }
 }

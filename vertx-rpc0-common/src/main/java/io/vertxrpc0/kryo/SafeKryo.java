@@ -27,20 +27,17 @@ import lombok.NonNull;
  */
 public final class SafeKryo extends Kryo {
 
-
-  private static final List<Class<?>> COLLECTION_TYPES = ImmutableList.of(
+  private static final List<Class<?>> COLLECTION_TYPES =
+      ImmutableList.of(
           ImmutableCollection.class,
           List.class,
           SortedSet.class,
           Set.class,
           Deque.class,
-          Queue.class
-  );
+          Queue.class);
 
-  private static final List<Class<?>> MAP_TYPES = ImmutableList.of(
-          ImmutableMap.class,
-          SortedMap.class
-  );
+  private static final List<Class<?>> MAP_TYPES =
+      ImmutableList.of(ImmutableMap.class, SortedMap.class);
 
   public SafeKryo() {
     super(new TrustedReferenceResolver());

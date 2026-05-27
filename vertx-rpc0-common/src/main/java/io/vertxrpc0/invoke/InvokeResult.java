@@ -28,10 +28,10 @@ public final class InvokeResult implements MessageExchange, Serializable {
     if (o == null || getClass() != o.getClass()) return false;
     InvokeResult that = (InvokeResult) o;
     return requestId == that.requestId
-           && timestamp == that.timestamp
-           && code == that.code
-           && Objects.equals(errorMessage, that.errorMessage)
-           && Objects.equals(result, that.result);
+        && timestamp == that.timestamp
+        && code == that.code
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(result, that.result);
   }
 
   @Override
@@ -42,12 +42,12 @@ public final class InvokeResult implements MessageExchange, Serializable {
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-            .omitNullValues()
-            .add("requestId", requestId)
-            .add("timestamp", timestamp)
-            .add("code", code)
-            .add("errorMessage", errorMessage)
-            .add("result", result)
-            .toString();
+        .omitNullValues()
+        .add("requestId", requestId)
+        .add("timestamp", timestamp)
+        .add("code", code)
+        .add("errorMessage", errorMessage)
+        .add("result", result)
+        .toString();
   }
 }

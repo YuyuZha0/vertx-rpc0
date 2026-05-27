@@ -24,7 +24,6 @@ public class DoubleServiceImpl implements DoubleService {
   @Override
   public Future<Double> add(Object[] doubles) {
     return Future.succeededFuture(
-            Arrays.stream(doubles).map(o -> (Double) o).mapToDouble(Double::doubleValue).sum()
-    );
+        Arrays.stream(doubles).map(o -> (Double) o).mapToDouble(Double::doubleValue).sum());
   }
 }

@@ -26,39 +26,30 @@ public class ReflectionUtilTest {
     return null;
   }
 
-
   @Test
   public void testFutureType() throws Exception {
-    Type genericType = getClass()
-            .getDeclaredMethod("future")
-            .getGenericReturnType();
+    Type genericType = getClass().getDeclaredMethod("future").getGenericReturnType();
     Class<?> type = ReflectionUtil.getFutureResultType(genericType);
     assertEquals(Double.class, type);
   }
 
   @Test
   public void testFutureType1() throws Exception {
-    Type genericType = getClass()
-            .getDeclaredMethod("future1")
-            .getGenericReturnType();
+    Type genericType = getClass().getDeclaredMethod("future1").getGenericReturnType();
     Class<?> type = ReflectionUtil.getFutureResultType(genericType);
     assertEquals(List.class, type);
   }
 
   @Test
   public void testCollectionType() throws Exception {
-    Type genericType = getClass()
-            .getDeclaredMethod("list")
-            .getGenericReturnType();
+    Type genericType = getClass().getDeclaredMethod("list").getGenericReturnType();
     Class<?> type = ReflectionUtil.getCollectionElementType(genericType);
     assertEquals(String.class, type);
   }
 
   @Test
   public void testMapType() throws Exception {
-    Type genericType = getClass()
-            .getDeclaredMethod("map")
-            .getGenericReturnType();
+    Type genericType = getClass().getDeclaredMethod("map").getGenericReturnType();
     Map.Entry<Class<?>, Class<?>> entry = ReflectionUtil.getMapKeyValueType(genericType);
     assertEquals(Integer.class, entry.getKey());
     assertEquals(Object[].class, entry.getValue());

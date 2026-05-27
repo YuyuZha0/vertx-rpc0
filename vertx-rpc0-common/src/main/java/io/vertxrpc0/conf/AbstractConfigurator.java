@@ -35,39 +35,45 @@ public abstract class AbstractConfigurator<T extends AbstractConfigurator<T>> {
 
   public final T registerType(@NonNull Class<?> type, int typeId) {
     Preconditions.checkArgument(
-            !type.isLocalClass()
+        !type.isLocalClass()
             && !type.isPrimitive()
             && !type.isInterface()
             && !type.isArray()
             && !type.isAnnotation()
             && !type.isAnonymousClass()
             && !type.isSynthetic(),
-            "Unsupported type: %s",
-            type.getTypeName()
-    );
+        "Unsupported type: %s",
+        type.getTypeName());
     Preconditions.checkArgument(typeId >= 0, "typeId should >= 0: %s, %s", type, typeId);
     Class<?> old = typeRegistry.put(typeId, type);
     Preconditions.checkArgument(
-            old == null || old.equals(type),
-            "Duplicated typeId for \"%s\" and \"%s\": %s",
-            old, type, typeId
-    );
+        old == null || old.equals(type),
+        "Duplicated typeId for \"%s\" and \"%s\": %s",
+        old,
+        type,
+        typeId);
     log.info("Register bean class: {} -> {}", typeId, type.getTypeName());
     return self();
   }
 
   public final T registerType(@NonNull Class<?> type) {
-    Preconditions.checkArgument(type.isAnnotationPresent(TrustedType.class), "@%s is required for type %s!",
-            TrustedType.class.getSimpleName(), type);
+    Preconditions.checkArgument(
+        type.isAnnotationPresent(TrustedType.class),
+        "@%s is required for type %s!",
+        TrustedType.class.getSimpleName(),
+        type);
     return registerType(type, type.getAnnotation(TrustedType.class).typeId());
   }
 
   public final T registerTypes(@NonNull String packageName, boolean recursive) {
-    visitPackage(packageName, recursive, type -> {
-      if (type.isAnnotationPresent(TrustedType.class)) {
-        registerType(type);
-      }
-    });
+    visitPackage(
+        packageName,
+        recursive,
+        type -> {
+          if (type.isAnnotationPresent(TrustedType.class)) {
+            registerType(type);
+          }
+        });
     return self();
   }
 
@@ -77,17 +83,16 @@ public abstract class AbstractConfigurator<T extends AbstractConfigurator<T>> {
   }
 
   @SuppressWarnings("UnstableApiUsage")
-  protected void visitPackage(@NonNull String packageName,
-                              boolean recursive,
-                              @NonNull Consumer<? super Class<?>> typeHandler) {
+  protected void visitPackage(
+      @NonNull String packageName,
+      boolean recursive,
+      @NonNull Consumer<? super Class<?>> typeHandler) {
     Set<ClassPath.ClassInfo> classInfoSet;
     try {
       if (recursive) {
-        classInfoSet = ClassPath.from(classLoader)
-                .getTopLevelClassesRecursive(packageName);
+        classInfoSet = ClassPath.from(classLoader).getTopLevelClassesRecursive(packageName);
       } else {
-        classInfoSet = ClassPath.from(classLoader)
-                .getTopLevelClasses(packageName);
+        classInfoSet = ClassPath.from(classLoader).getTopLevelClasses(packageName);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);

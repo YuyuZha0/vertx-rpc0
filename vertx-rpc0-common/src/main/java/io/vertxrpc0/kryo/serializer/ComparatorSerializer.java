@@ -25,8 +25,12 @@ import java.util.Comparator;
 public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?>> {
 
   private static final ObjectIntMap<Class<?>> SUPPORTED = new ObjectIntMap<>();
-  /** Dispatch tag for {@link Comparators} self-serialization. Local to this serializer's tag space. */
+
+  /**
+   * Dispatch tag for {@link Comparators} self-serialization. Local to this serializer's tag space.
+   */
   private static final int COMPARATORS_DELEGATE = 99;
+
   private static final int USING_JDK = 100;
 
   static {
@@ -69,7 +73,8 @@ public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?
     } else if (comparator instanceof Comparators<?> ours) {
       output.writeInt(COMPARATORS_DELEGATE + 1, true);
       ours.writeTo(kryo, output);
-    } else if (isSafeUsingJdkSerialization(comparator)) { // may cause vulnerability: baeldung.com/java-deserialization-vulnerabilities
+    } else if (isSafeUsingJdkSerialization(
+        comparator)) { // may cause vulnerability: baeldung.com/java-deserialization-vulnerabilities
       output.writeInt(USING_JDK + 1, true);
       try {
         ObjectMap<Object, Object> graphContext = kryo.getGraphContext();
@@ -84,7 +89,9 @@ public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?
         throw new KryoException("Error during Java serialization.", ex);
       }
     } else {
-      throw new KryoException("Unsupported comparator: " + comparator.getClass().getName()
+      throw new KryoException(
+          "Unsupported comparator: "
+              + comparator.getClass().getName()
               + ". Use io.vertxrpc0.Comparators.* for chainable wire-safe comparators, "
               + "or construct ComparatorSerializer(trustUnsafe=true) to opt into JDK serialization "
               + "for arbitrary Serializable comparators.");
@@ -112,31 +119,32 @@ public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?
         return Ordering.usingToString();
       case COMPARATORS_DELEGATE:
         return Comparators.readFrom(kryo, input);
-      case USING_JDK: {
-        if (!trustUnsafe) {
-          throw new KryoException("Deserialization of unsafe comparator is prohibited!");
-        }
-        try {
-          ObjectMap<Object, Object> graphContext = kryo.getGraphContext();
-          ObjectInputStream objectStream = (ObjectInputStream) graphContext.get(this);
-          if (objectStream == null) {
-            objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
-            graphContext.put(this, objectStream);
+      case USING_JDK:
+        {
+          if (!trustUnsafe) {
+            throw new KryoException("Deserialization of unsafe comparator is prohibited!");
           }
-          return (Comparator<?>) objectStream.readObject();
-        } catch (Exception ex) {
-          throw new KryoException("Error during Java deserialization.", ex);
+          try {
+            ObjectMap<Object, Object> graphContext = kryo.getGraphContext();
+            ObjectInputStream objectStream = (ObjectInputStream) graphContext.get(this);
+            if (objectStream == null) {
+              objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
+              graphContext.put(this, objectStream);
+            }
+            return (Comparator<?>) objectStream.readObject();
+          } catch (Exception ex) {
+            throw new KryoException("Error during Java deserialization.", ex);
+          }
         }
-      }
       default:
         throw new KryoException("Unknown comparator tag: " + id);
     }
   }
 
-
   /**
-   * {@link ObjectInputStream} uses the last user-defined {@link ClassLoader}, which may not be the correct one. This is a known
-   * Java issue and is often solved by using a specific class loader. See:
+   * {@link ObjectInputStream} uses the last user-defined {@link ClassLoader}, which may not be the
+   * correct one. This is a known Java issue and is often solved by using a specific class loader.
+   * See:
    * https://github.com/apache/spark/blob/v1.6.3/streaming/src/main/scala/org/apache/spark/streaming/Checkpoint.scala#L154
    * https://issues.apache.org/jira/browse/GROOVY-1627
    */

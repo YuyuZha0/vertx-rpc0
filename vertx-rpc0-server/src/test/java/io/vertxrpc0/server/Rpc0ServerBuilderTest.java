@@ -27,8 +27,9 @@ public class Rpc0ServerBuilderTest {
   @Test
   public void addBindingRejectsConcreteClass(Vertx vertx) {
     Rpc0ServerBuilder builder = new Rpc0ServerBuilder(vertx, new NetServerOptions());
-    assertThrows(IllegalArgumentException.class,
-            () -> builder.addBinding((Class) DemoServiceImpl.class, new DemoServiceImpl()));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> builder.addBinding((Class) DemoServiceImpl.class, new DemoServiceImpl()));
   }
 
   @Test
@@ -41,7 +42,8 @@ public class Rpc0ServerBuilderTest {
 
   @Test
   public void constructorRejectsNullVertx() {
-    assertThrows(NullPointerException.class, () -> new Rpc0ServerBuilder(null, new NetServerOptions()));
+    assertThrows(
+        NullPointerException.class, () -> new Rpc0ServerBuilder(null, new NetServerOptions()));
   }
 
   @Test
@@ -52,7 +54,8 @@ public class Rpc0ServerBuilderTest {
 
   @Test
   public void buildSupplierProducesFreshInstancesPerCall(Vertx vertx) {
-    Rpc0ServerBuilder builder = new Rpc0ServerBuilder(vertx, new NetServerOptions())
+    Rpc0ServerBuilder builder =
+        new Rpc0ServerBuilder(vertx, new NetServerOptions())
             .addBinding(DemoService.class, new DemoServiceImpl());
     Supplier<Rpc0Server> supplier = builder.buildSupplier();
     Rpc0Server a = supplier.get();
@@ -72,7 +75,8 @@ public class Rpc0ServerBuilderTest {
 
   @Test
   public void buildSupplierSnapshotsConfig(Vertx vertx) throws Exception {
-    Rpc0ServerBuilder builder = new Rpc0ServerBuilder(vertx, new NetServerOptions())
+    Rpc0ServerBuilder builder =
+        new Rpc0ServerBuilder(vertx, new NetServerOptions())
             .addBinding(DemoService.class, new DemoServiceImpl())
             .setKeepAliveDuration(Duration.ofSeconds(7));
     Supplier<Rpc0Server> supplier = builder.buildSupplier();
@@ -95,7 +99,8 @@ public class Rpc0ServerBuilderTest {
     Field serviceMapField = ServiceLookup.class.getDeclaredField("serviceMap");
     serviceMapField.setAccessible(true);
     @SuppressWarnings("unchecked")
-    java.util.Map<String, Object> services = (java.util.Map<String, Object>) serviceMapField.get(lookup);
+    java.util.Map<String, Object> services =
+        (java.util.Map<String, Object>) serviceMapField.get(lookup);
     assertEquals(1, services.size());
     assertEquals(true, services.containsKey(DemoService.class.getTypeName()));
   }

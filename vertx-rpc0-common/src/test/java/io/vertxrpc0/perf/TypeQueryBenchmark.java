@@ -15,6 +15,8 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
 /**
+ *
+ *
  * <pre>
  *   Benchmark                    Mode  Cnt  Score   Error  Units
  * TypeQueryBenchmark.def       avgt   25  6.117 ± 0.398  ns/op
@@ -39,10 +41,10 @@ public class TypeQueryBenchmark {
   public void setup() {
     identity.addAll(def);
 
-    a = Stream.of(
-            KryoFactory.getValueTypes(),
-            ImmutableSet.of(Object.class, Void.class)
-    ).flatMap(Set::stream).toArray(Class<?>[]::new);
+    a =
+        Stream.of(KryoFactory.getValueTypes(), ImmutableSet.of(Object.class, Void.class))
+            .flatMap(Set::stream)
+            .toArray(Class<?>[]::new);
     index = 0;
   }
 

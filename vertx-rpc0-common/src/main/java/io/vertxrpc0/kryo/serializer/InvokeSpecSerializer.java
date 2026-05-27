@@ -34,13 +34,6 @@ public final class InvokeSpecSerializer extends ImmutableSerializer<InvokeSpec> 
     MethodType methodType = kryo.readObject(input, MethodType.class);
     ParameterArray parameterArray = kryo.readObject(input, ParameterArray.class);
     return new InvokeSpec(
-            requestId,
-            timestamp,
-            callSiteClassName,
-            methodName,
-            methodType,
-            parameterArray
-    );
+        requestId, timestamp, callSiteClassName, methodName, methodType, parameterArray);
   }
-
 }

@@ -15,7 +15,7 @@ import lombok.NonNull;
  */
 public final class MarkedLenMessageHandler implements Handler<Buffer> {
 
-  private static final int DEFAULT_MAX_MSG_LEN = 10 << 20; //10MB
+  private static final int DEFAULT_MAX_MSG_LEN = 10 << 20; // 10MB
 
   private final ParserHandler parserHandler;
   private final RecordParser recordParser;
@@ -43,16 +43,16 @@ public final class MarkedLenMessageHandler implements Handler<Buffer> {
       if (isExpectLen()) {
         byte[] magic = event.getBytes(0, 2);
         if (!Prefix.isMagicMatch(magic)) {
-          parserHandler.fatal(new VertxException(
-                  Strings.lenientFormat("Unknown protocol magic: %s", ByteBufUtil.hexDump(magic)
-                  ), true));
+          parserHandler.fatal(
+              new VertxException(
+                  Strings.lenientFormat("Unknown protocol magic: %s", ByteBufUtil.hexDump(magic)),
+                  true));
           return;
         }
         int msgLen = event.getInt(2);
         if (msgLen < 0 || msgLen > maxMsgLen) {
-          parserHandler.fatal(new VertxException(
-                  Strings.lenientFormat("Invalid msgLen: %s", msgLen
-                  ), true));
+          parserHandler.fatal(
+              new VertxException(Strings.lenientFormat("Invalid msgLen: %s", msgLen), true));
           return;
         }
         recordParser.fixedSizeMode(msgLen);

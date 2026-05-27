@@ -60,7 +60,8 @@ public class MarkedLenMessageHandlerTest {
   @Test
   public void handlesBackToBackMessages() {
     MarkedLenMessageHandler h = new MarkedLenMessageHandler(handler);
-    Buffer combined = Buffer.buffer()
+    Buffer combined =
+        Buffer.buffer()
             .appendBuffer(framed("one".getBytes()))
             .appendBuffer(framed("two".getBytes()));
     h.handle(combined);
@@ -72,11 +73,12 @@ public class MarkedLenMessageHandlerTest {
   @Test
   public void rejectsBadMagic() {
     MarkedLenMessageHandler h = new MarkedLenMessageHandler(handler);
-    Buffer bad = Buffer.buffer(new byte[]{0, 0, 0, 0, 0, 4, 'd', 'a', 't', 'a'});
+    Buffer bad = Buffer.buffer(new byte[] {0, 0, 0, 0, 0, 4, 'd', 'a', 't', 'a'});
     h.handle(bad);
     assertEquals(1, handler.failures.size());
-    assertTrue(handler.failures.get(0).getMessage().contains("Unknown protocol magic"),
-            () -> "expected magic-mismatch message, got: " + handler.failures.get(0).getMessage());
+    assertTrue(
+        handler.failures.get(0).getMessage().contains("Unknown protocol magic"),
+        () -> "expected magic-mismatch message, got: " + handler.failures.get(0).getMessage());
   }
 
   @Test
@@ -84,9 +86,7 @@ public class MarkedLenMessageHandlerTest {
     MarkedLenMessageHandler h = new MarkedLenMessageHandler(handler);
     Buffer prefixed = framed(new byte[0]);
     // Overwrite the 4-byte length field with -1.
-    Buffer mutated = Buffer.buffer()
-            .appendBuffer(prefixed.getBuffer(0, 2))
-            .appendInt(-1);
+    Buffer mutated = Buffer.buffer().appendBuffer(prefixed.getBuffer(0, 2)).appendInt(-1);
     h.handle(mutated);
     assertEquals(1, handler.failures.size());
     assertTrue(handler.failures.get(0).getMessage().contains("Invalid msgLen"));
@@ -96,9 +96,7 @@ public class MarkedLenMessageHandlerTest {
   public void rejectsOversizeMsgLen() {
     MarkedLenMessageHandler h = new MarkedLenMessageHandler(handler, 16);
     Buffer prefixed = framed(new byte[0]);
-    Buffer mutated = Buffer.buffer()
-            .appendBuffer(prefixed.getBuffer(0, 2))
-            .appendInt(17);
+    Buffer mutated = Buffer.buffer().appendBuffer(prefixed.getBuffer(0, 2)).appendInt(17);
     h.handle(mutated);
     assertEquals(1, handler.failures.size());
     assertTrue(handler.failures.get(0).getMessage().contains("Invalid msgLen"));
@@ -130,5 +128,4 @@ public class MarkedLenMessageHandlerTest {
       failures.add(cause);
     }
   }
-
 }

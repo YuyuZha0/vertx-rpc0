@@ -29,20 +29,20 @@ import org.junit.jupiter.api.Test;
 
 public class ImmutableMapSerializerTest {
 
-
   static {
     Log.TRACE();
   }
 
-  private final Kryo kryo = new KryoFactory(
-          getClass().getClassLoader(),
-          new KryoRegistry() {
-            @Override
-            public void registerClasses(Kryo kryo) {
-              kryo.register(Foo.class);
-            }
-          }
-  ).get();
+  private final Kryo kryo =
+      new KryoFactory(
+              getClass().getClassLoader(),
+              new KryoRegistry() {
+                @Override
+                public void registerClasses(Kryo kryo) {
+                  kryo.register(Foo.class);
+                }
+              })
+          .get();
 
   @SneakyThrows
   @SuppressWarnings("unchecked")
@@ -70,12 +70,12 @@ public class ImmutableMapSerializerTest {
     assertEquals(map2, roundtrip(map2));
     assertEquals(map2, copy(map2));
 
-    ImmutableMap<String, Object> map3 = ImmutableMap.of(
+    ImmutableMap<String, Object> map3 =
+        ImmutableMap.of(
             "time", LocalDateTime.now(),
             "score", Math.PI,
             "uuid", UUID.randomUUID().toString(),
-            "tags", Arrays.asList("aaa", "bbb", "ccc")
-    );
+            "tags", Arrays.asList("aaa", "bbb", "ccc"));
     assertEquals(map3, roundtrip(map3));
   }
 
@@ -89,12 +89,12 @@ public class ImmutableMapSerializerTest {
     assertEquals(map2, roundtrip(map2));
     assertEquals(map2, copy(map2));
 
-    ImmutableMap<String, Set<Integer>> map3 = ImmutableMap.of(
+    ImmutableMap<String, Set<Integer>> map3 =
+        ImmutableMap.of(
             "time", Set.of(1, 3),
             "score", Set.of(2, 3),
             "uuid", Set.of(1, 3),
-            "tags", ImmutableSet.of(4, 5, 6)
-    );
+            "tags", ImmutableSet.of(4, 5, 6));
     assertEquals(map3, roundtrip(map3));
   }
 
@@ -104,16 +104,16 @@ public class ImmutableMapSerializerTest {
     assertEquals(map1, roundtrip(map1));
     assertEquals(map1, copy(map1));
 
-    ImmutableSortedMap<String, Object> map2 = ImmutableSortedMap.of(
+    ImmutableSortedMap<String, Object> map2 =
+        ImmutableSortedMap.of(
             "time", LocalDateTime.now(),
             "score", Math.PI,
             "uuid", UUID.randomUUID().toString(),
-            "tags", Arrays.asList("aaa", "bbb", "ccc")
-    );
+            "tags", Arrays.asList("aaa", "bbb", "ccc"));
     assertEquals(map2, roundtrip(map2));
 
-    ImmutableSortedMap<Object, Object> map3 = ImmutableSortedMap
-            .orderedBy(Ordering.usingToString())
+    ImmutableSortedMap<Object, Object> map3 =
+        ImmutableSortedMap.orderedBy(Ordering.usingToString())
             .put("1", Set.of("a", "b", "c"))
             .put(2, LocalDateTime.now())
             .put("3", UUID.randomUUID().toString())
@@ -129,17 +129,17 @@ public class ImmutableMapSerializerTest {
     foo.setName(UUID.randomUUID().toString());
     foo.setList1(ImmutableList.of("a", 1, "b", 2));
     foo.setList2(ImmutableSortedSet.of(1L, 2L, 3L));
-    foo.setMap1(ImmutableMap.of(
+    foo.setMap1(
+        ImmutableMap.of(
             "time", LocalDateTime.now(),
             "uuid", UUID.randomUUID().toString(),
             "score", Math.PI,
-            "tags", Arrays.asList("1", "2", "3")
-    ));
-    foo.setMap2(ImmutableBiMap.of(
+            "tags", Arrays.asList("1", "2", "3")));
+    foo.setMap2(
+        ImmutableBiMap.of(
             "a", 1,
             "b", 2,
-            "c", 3
-    ));
+            "c", 3));
 
     assertEquals(foo, roundtrip(foo));
   }
@@ -155,13 +155,17 @@ public class ImmutableMapSerializerTest {
     private ImmutableMap<String, Object> map1;
     private ImmutableBiMap<String, Integer> map2;
 
-
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       Foo foo = (Foo) o;
-      return time == foo.time && Objects.equals(name, foo.name) && Objects.equals(list1, foo.list1) && Objects.equals(list2, foo.list2) && Objects.equals(map1, foo.map1) && Objects.equals(map2, foo.map2);
+      return time == foo.time
+          && Objects.equals(name, foo.name)
+          && Objects.equals(list1, foo.list1)
+          && Objects.equals(list2, foo.list2)
+          && Objects.equals(map1, foo.map1)
+          && Objects.equals(map2, foo.map2);
     }
 
     @Override
@@ -172,13 +176,13 @@ public class ImmutableMapSerializerTest {
     @Override
     public String toString() {
       return MoreObjects.toStringHelper(this)
-              .add("time", time)
-              .add("name", name)
-              .add("list1", list1)
-              .add("list2", list2)
-              .add("map1", map1)
-              .add("map2", map2)
-              .toString();
+          .add("time", time)
+          .add("name", name)
+          .add("list1", list1)
+          .add("list2", list2)
+          .add("map1", map1)
+          .add("map2", map2)
+          .toString();
     }
   }
 }

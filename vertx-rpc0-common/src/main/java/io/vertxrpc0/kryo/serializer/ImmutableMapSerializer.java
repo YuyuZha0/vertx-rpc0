@@ -21,23 +21,20 @@ import java.util.SortedMap;
  * @author fishzhao
  * @since 2022-02-17
  */
-public final class ImmutableMapSerializer<T extends ImmutableMap<?, ?>> extends ImmutableSerializer<T> {
-
+public final class ImmutableMapSerializer<T extends ImmutableMap<?, ?>>
+    extends ImmutableSerializer<T> {
 
   private static final byte IMMUTABLE = 1;
   private static final byte BI = 2;
   private static final byte SORTED = 3;
 
-
   {
     setAcceptsNull(true);
   }
 
-
   private void writeComparator(Kryo kryo, Output output, T map) {
     kryo.writeClassAndObject(output, ((SortedMap<?, ?>) map).comparator());
   }
-
 
   @Override
   public void write(Kryo kryo, Output output, T map) {
@@ -109,7 +106,6 @@ public final class ImmutableMapSerializer<T extends ImmutableMap<?, ?>> extends 
     }
   }
 
-
   @Override
   @SuppressWarnings({"unchecked", "UnstableApiUsage"})
   public T read(Kryo kryo, Input input, Class<? extends T> type) {
@@ -170,14 +166,12 @@ public final class ImmutableMapSerializer<T extends ImmutableMap<?, ?>> extends 
       if (genericTypes != null) kryo.getGenerics().pushGenericType(genericTypes[0]);
       if (keySerializer != null) {
         key = kryo.readObject(input, keyType, keySerializer);
-      } else
-        key = kryo.readClassAndObject(input);
+      } else key = kryo.readClassAndObject(input);
       if (genericTypes != null) kryo.getGenerics().popGenericType();
       Object value;
       if (valueSerializer != null) {
         value = kryo.readObject(input, valueType, valueSerializer);
-      } else
-        value = kryo.readClassAndObject(input);
+      } else value = kryo.readClassAndObject(input);
       builder.put(key, value);
     }
     kryo.getGenerics().popGenericType();

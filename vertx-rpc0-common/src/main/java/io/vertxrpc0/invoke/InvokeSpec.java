@@ -28,13 +28,13 @@ public final class InvokeSpec implements MessageExchange, Serializable {
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-            .add("requestId", requestId)
-            .add("timestamp", timestamp)
-            .add("callSiteClassName", callSiteClassName)
-            .add("methodName", methodName)
-            .add("methodType", methodType)
-            .add("parameters", parameters)
-            .toString();
+        .add("requestId", requestId)
+        .add("timestamp", timestamp)
+        .add("callSiteClassName", callSiteClassName)
+        .add("methodName", methodName)
+        .add("methodType", methodType)
+        .add("parameters", parameters)
+        .toString();
   }
 
   @Override
@@ -43,15 +43,16 @@ public final class InvokeSpec implements MessageExchange, Serializable {
     if (o == null || getClass() != o.getClass()) return false;
     InvokeSpec that = (InvokeSpec) o;
     return requestId == that.requestId
-           && timestamp == that.timestamp
-           && callSiteClassName.equals(that.callSiteClassName)
-           && methodName.equals(that.methodName)
-           && methodType.equals(that.methodType)
-           && parameters.equals(that.parameters);
+        && timestamp == that.timestamp
+        && callSiteClassName.equals(that.callSiteClassName)
+        && methodName.equals(that.methodName)
+        && methodType.equals(that.methodType)
+        && parameters.equals(that.parameters);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(requestId, timestamp, callSiteClassName, methodName, methodType, parameters);
+    return Objects.hash(
+        requestId, timestamp, callSiteClassName, methodName, methodType, parameters);
   }
 }

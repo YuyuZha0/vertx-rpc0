@@ -29,8 +29,10 @@ public class AbstractConfiguratorTest {
 
     Registration registration = kryo.getRegistration(TestBean.class);
     assertNotNull(registration);
-    assertEquals(before + 2, registration.getId(),
-            "typeId 1 should map to next-id + 1 + 1 per TrustedTypeKryoRegistry");
+    assertEquals(
+        before + 2,
+        registration.getId(),
+        "typeId 1 should map to next-id + 1 + 1 per TrustedTypeKryoRegistry");
   }
 
   @Test
@@ -42,20 +44,23 @@ public class AbstractConfiguratorTest {
   @Test
   public void registerTypeRejectsInterface() {
     TestConfigurator configurator = new TestConfigurator();
-    assertThrows(IllegalArgumentException.class, () -> configurator.registerType(Runnable.class, 1));
+    assertThrows(
+        IllegalArgumentException.class, () -> configurator.registerType(Runnable.class, 1));
   }
 
   @Test
   public void registerTypeRejectsNegativeId() {
     TestConfigurator configurator = new TestConfigurator();
-    assertThrows(IllegalArgumentException.class, () -> configurator.registerType(TestBean.class, -1));
+    assertThrows(
+        IllegalArgumentException.class, () -> configurator.registerType(TestBean.class, -1));
   }
 
   @Test
   public void registerTypeRejectsDuplicateIdForDifferentTypes() {
     TestConfigurator configurator = new TestConfigurator();
     configurator.registerType(TestBean.class, 1);
-    assertThrows(IllegalArgumentException.class, () -> configurator.registerType(OtherBean.class, 1));
+    assertThrows(
+        IllegalArgumentException.class, () -> configurator.registerType(OtherBean.class, 1));
   }
 
   @Test
@@ -81,10 +86,8 @@ public class AbstractConfiguratorTest {
   }
 
   @TrustedType(typeId = 1)
-  public static final class TestBean {
-  }
+  public static final class TestBean {}
 
   @TrustedType(typeId = 2)
-  public static final class OtherBean {
-  }
+  public static final class OtherBean {}
 }

@@ -17,15 +17,8 @@ public class ParameterArrayTest {
 
   @Test
   public void test() {
-    List<Object> a = Arrays.asList(
-            1,
-            Math.PI,
-            null,
-            "hello",
-            675L,
-            ImmutableMap.of(),
-            UUID.randomUUID()
-    );
+    List<Object> a =
+        Arrays.asList(1, Math.PI, null, "hello", 675L, ImmutableMap.of(), UUID.randomUUID());
     ParameterArray b = ParameterArray.create(a);
 
     assertEquals(a, b);
@@ -34,16 +27,12 @@ public class ParameterArrayTest {
     assertArrayEquals(a.toArray(), b.toArray());
     assertArrayEquals(a.toArray(new Object[0]), b.toArray(Object[]::new));
 
-    assertTrue(Iterators.elementsEqual(
-            a.iterator(),
-            b.iterator()
-    ));
+    assertTrue(Iterators.elementsEqual(a.iterator(), b.iterator()));
 
     assertEquals(a.subList(0, 3), b.subList(0, 3));
 
     assertEquals(Collections.emptyList(), ParameterArray.create());
-    assertEquals(Collections.singletonList(1), ParameterArray.create(new Object[]{1}));
+    assertEquals(Collections.singletonList(1), ParameterArray.create(new Object[] {1}));
     assertEquals(new ArrayList<>(b), b);
   }
-
 }

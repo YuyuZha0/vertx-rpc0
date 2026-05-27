@@ -12,44 +12,40 @@ import lombok.NonNull;
 import lombok.ToString;
 
 /**
- * Wire-safe, chainable {@link Comparator} family modeled after Guava's
- * {@code Ordering}. Every subclass here is wire-representable through
- * {@code ComparatorSerializer} without any reflection on JDK or Guava internals
- * and without the JDK-deserialization attack surface that the {@code trustUnsafe}
- * fallback opens.
+ * Wire-safe, chainable {@link Comparator} family modeled after Guava's {@code Ordering}. Every
+ * subclass here is wire-representable through {@code ComparatorSerializer} without any reflection
+ * on JDK or Guava internals and without the JDK-deserialization attack surface that the {@code
+ * trustUnsafe} fallback opens.
  *
- * <p>Use the static factories ({@link #natural()}, {@link #reverseOrder()},
- * {@link #usingToString()}, {@link #allEqual()}, {@link #arbitrary()}) to obtain
- * leaf singletons, and chain methods ({@link #reverse()}, {@link #nullsFirst()},
- * {@link #nullsLast()}, {@link #compound(Comparators)}) to compose them. Anything
- * passed to {@code compound} is itself a {@code Comparators}, so the entire chain
- * is statically guaranteed to be wire-representable.
+ * <p>Use the static factories ({@link #natural()}, {@link #reverseOrder()}, {@link
+ * #usingToString()}, {@link #allEqual()}, {@link #arbitrary()}) to obtain leaf singletons, and
+ * chain methods ({@link #reverse()}, {@link #nullsFirst()}, {@link #nullsLast()}, {@link
+ * #compound(Comparators)}) to compose them. Anything passed to {@code compound} is itself a {@code
+ * Comparators}, so the entire chain is statically guaranteed to be wire-representable.
  *
- * <p>Each concrete subclass owns its magic number on the wire ({@link #magic()}).
- * The number space is local to this class — outer serializers never see it.
- * Adding a new subclass: declare a new {@code MAGIC} constant, override
- * {@link #magic()}, {@link #writeBody(Kryo, Output)}, and the {@code compare}
- * method, expose a static {@code decode} (for wrappers; leaves return the
- * singleton directly), add the class to the {@code permits} list, and add a
- * {@code case} in {@link #readFrom(Kryo, Input)}. The outer serializer never
- * changes.
+ * <p>Each concrete subclass owns its magic number on the wire ({@link #magic()}). The number space
+ * is local to this class — outer serializers never see it. Adding a new subclass: declare a new
+ * {@code MAGIC} constant, override {@link #magic()}, {@link #writeBody(Kryo, Output)}, and the
+ * {@code compare} method, expose a static {@code decode} (for wrappers; leaves return the singleton
+ * directly), add the class to the {@code permits} list, and add a {@code case} in {@link
+ * #readFrom(Kryo, Input)}. The outer serializer never changes.
  */
-public sealed abstract class Comparators<T> implements Comparator<T>
-        permits Comparators.Natural,
-                Comparators.ReverseOrder,
-                Comparators.UsingToString,
-                Comparators.AllEqual,
-                Comparators.Arbitrary,
-                Comparators.Reversed,
-                Comparators.NullsFirst,
-                Comparators.NullsLast,
-                Comparators.Compound {
+public abstract sealed class Comparators<T> implements Comparator<T>
+    permits Comparators.Natural,
+        Comparators.ReverseOrder,
+        Comparators.UsingToString,
+        Comparators.AllEqual,
+        Comparators.Arbitrary,
+        Comparators.Reversed,
+        Comparators.NullsFirst,
+        Comparators.NullsLast,
+        Comparators.Compound {
 
   protected Comparators() {}
 
   /**
-   * Public entry point used by {@code ComparatorSerializer}. Reads magic + state
-   * and returns a fully-constructed instance.
+   * Public entry point used by {@code ComparatorSerializer}. Reads magic + state and returns a
+   * fully-constructed instance.
    */
   public static Comparators<?> readFrom(@NonNull Kryo kryo, @NonNull Input input) {
     int magic = input.readVarInt(true);

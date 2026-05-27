@@ -1,5 +1,7 @@
 package io.vertxrpc0.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.vertx.core.Vertx;
@@ -11,13 +13,10 @@ import io.vertx.core.net.impl.NetSocketInternal;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Documents how Vert.x's {@link io.vertx.core.net.NetSocket#write(Buffer)} handles the ref-count of
@@ -96,9 +95,8 @@ public class NetSocketByteBufOwnershipTest {
                                                                   ? "channel"
                                                                   : "unpooled-external")
                                                               + ")");
-                                                      buf
-                                                          .release(); // we own it; clean up after
-                                                                      // ourselves.
+                                                      buf.release(); // we own it; clean up after
+                                                      // ourselves.
                                                       socket.close();
                                                       server.close();
                                                       ctx.completeNow();

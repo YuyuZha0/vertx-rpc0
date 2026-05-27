@@ -61,9 +61,8 @@ public class ComparatorSerializerTest {
   // The pre-existing JDK/Guava singleton tags (1..6) still work in safe mode.
   // ---------------------------------------------------------------------------
 
-  private static <T> void sortsTheSame(Comparator<? super T> expected,
-                                       Comparator<?> actual,
-                                       List<T> sample) {
+  private static <T> void sortsTheSame(
+      Comparator<? super T> expected, Comparator<?> actual, List<T> sample) {
     @SuppressWarnings("unchecked")
     Comparator<? super T> coerced = (Comparator<? super T>) actual;
     List<T> a = new ArrayList<>(sample);
@@ -96,19 +95,21 @@ public class ComparatorSerializerTest {
 
   @Test
   public void safeModeRejectsLambdaFromComparingInt() {
-    ToIntFunction<? super String> func = (ToIntFunction<? super String> & Serializable) String::length;
+    ToIntFunction<? super String> func =
+        (ToIntFunction<? super String> & Serializable) String::length;
     Comparator<String> lambda = Comparator.comparingInt(func);
     assertThrows(KryoException.class, () -> roundtrip(safeKryo, lambda));
   }
 
   @Test
   public void safeModeRejectsAnonymousComparator() {
-    Comparator<String> anon = new Comparator<>() {
-      @Override
-      public int compare(String o1, String o2) {
-        return 0;
-      }
-    };
+    Comparator<String> anon =
+        new Comparator<>() {
+          @Override
+          public int compare(String o1, String o2) {
+            return 0;
+          }
+        };
     assertThrows(KryoException.class, () -> roundtrip(safeKryo, anon));
   }
 
@@ -117,16 +118,18 @@ public class ComparatorSerializerTest {
   // ---------------------------------------------------------------------------
 
   /**
-   * Hostile captured-lambda payload must never reach the deserializer in safe mode —
-   * the body must not even have a chance to execute.
+   * Hostile captured-lambda payload must never reach the deserializer in safe mode — the body must
+   * not even have a chance to execute.
    */
   @Test
   public void safeModeRejectsHostileCapturedLambda() {
     AtomicInteger sideEffect = new AtomicInteger();
-    ToIntFunction<? super String> func = (ToIntFunction<? super String> & Serializable) s -> {
-      sideEffect.incrementAndGet();
-      return s.length();
-    };
+    ToIntFunction<? super String> func =
+        (ToIntFunction<? super String> & Serializable)
+            s -> {
+              sideEffect.incrementAndGet();
+              return s.length();
+            };
     Comparator<String> hostile = Comparator.comparingInt(func);
     assertThrows(KryoException.class, () -> roundtrip(safeKryo, hostile));
     assertEquals(0, sideEffect.get());
@@ -134,7 +137,8 @@ public class ComparatorSerializerTest {
 
   @Test
   public void unsafeModeRoundTripsSerializableLambda() {
-    ToIntFunction<? super String> func = (ToIntFunction<? super String> & Serializable) String::length;
+    ToIntFunction<? super String> func =
+        (ToIntFunction<? super String> & Serializable) String::length;
     Comparator<String> lambda = Comparator.comparingInt(func);
     Comparator<?> back = roundtrip(unsafeKryo, lambda);
     assertNotNull(back);
@@ -155,22 +159,23 @@ public class ComparatorSerializerTest {
 
   @Test
   public void unsafeModeStillRejectsNonSerializableAnonymous() {
-    Comparator<String> anon = new Comparator<>() {
-      @Override
-      public int compare(String o1, String o2) {
-        return 0;
-      }
-    };
+    Comparator<String> anon =
+        new Comparator<>() {
+          @Override
+          public int compare(String o1, String o2) {
+            return 0;
+          }
+        };
     assertThrows(KryoException.class, () -> roundtrip(unsafeKryo, anon));
   }
 
   @Test
   public void chainableLeafSingletonsRoundTripWithIdentityPreserved() {
-    assertSame(Comparators.natural(),       roundtrip(safeKryo, Comparators.natural()));
-    assertSame(Comparators.reverseOrder(),  roundtrip(safeKryo, Comparators.reverseOrder()));
+    assertSame(Comparators.natural(), roundtrip(safeKryo, Comparators.natural()));
+    assertSame(Comparators.reverseOrder(), roundtrip(safeKryo, Comparators.reverseOrder()));
     assertSame(Comparators.usingToString(), roundtrip(safeKryo, Comparators.usingToString()));
-    assertSame(Comparators.allEqual(),      roundtrip(safeKryo, Comparators.allEqual()));
-    assertSame(Comparators.arbitrary(),     roundtrip(safeKryo, Comparators.arbitrary()));
+    assertSame(Comparators.allEqual(), roundtrip(safeKryo, Comparators.allEqual()));
+    assertSame(Comparators.arbitrary(), roundtrip(safeKryo, Comparators.arbitrary()));
   }
 
   @Test
@@ -196,8 +201,8 @@ public class ComparatorSerializerTest {
 
   @Test
   public void chainableCompoundRoundTrip() {
-    Comparators<Integer> c = Comparators.<Integer>natural()
-            .compound(Comparators.<Integer>reverseOrder());
+    Comparators<Integer> c =
+        Comparators.<Integer>natural().compound(Comparators.<Integer>reverseOrder());
     assertEquals(c, roundtrip(safeKryo, c));
     sortsTheSame(c, roundtrip(safeKryo, c), List.of(10, 2, 33, 4, 5));
   }
@@ -208,7 +213,8 @@ public class ComparatorSerializerTest {
 
   @Test
   public void chainableNestedRoundTrip() {
-    Comparators<Integer> nested = Comparators.<Integer>natural()
+    Comparators<Integer> nested =
+        Comparators.<Integer>natural()
             .compound(Comparators.<Integer>reverseOrder())
             .reverse()
             .nullsFirst();

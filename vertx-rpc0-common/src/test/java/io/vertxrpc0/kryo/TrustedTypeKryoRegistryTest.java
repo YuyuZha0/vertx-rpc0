@@ -52,10 +52,8 @@ public class TrustedTypeKryoRegistryTest {
   }
 
   @TrustedType(typeId = 5)
-  public static final class TypeA {
-  }
+  public static final class TypeA {}
 
   @TrustedType(typeId = 7)
-  public static final class TypeB {
-  }
+  public static final class TypeB {}
 }

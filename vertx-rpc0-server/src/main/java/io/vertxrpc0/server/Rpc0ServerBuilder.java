@@ -24,16 +24,18 @@ import lombok.extern.slf4j.Slf4j;
  * @since 2021-12-24
  */
 @Slf4j
-public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuilder> implements ConstructingProcess<Rpc0Server> {
+public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuilder>
+    implements ConstructingProcess<Rpc0Server> {
 
   private final ClassToInstanceMap<Object> registry = MutableClassToInstanceMap.create();
   private final Vertx vertx;
   private final NetServerOptions netServerOptions;
   private Duration keepAliveDuration = Duration.ofMinutes(2);
 
-  public Rpc0ServerBuilder(@NonNull Vertx vertx,
-                           @NonNull NetServerOptions netServerOptions,
-                           @NonNull ClassLoader classLoader) {
+  public Rpc0ServerBuilder(
+      @NonNull Vertx vertx,
+      @NonNull NetServerOptions netServerOptions,
+      @NonNull ClassLoader classLoader) {
     super(classLoader);
     this.vertx = vertx;
     this.netServerOptions = netServerOptions;
@@ -43,10 +45,7 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
     this(vertx, netServerOptions, Vertx.class.getClassLoader());
   }
 
-  /**
-   * Builds a single {@link Rpc0Server} instance. Equivalent to
-   * {@code buildSupplier().get()}.
-   */
+  /** Builds a single {@link Rpc0Server} instance. Equivalent to {@code buildSupplier().get()}. */
   @Override
   public Rpc0Server build() {
     return buildSupplier().get();
@@ -56,16 +55,17 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
    * Returns a {@link Supplier} that mints a fresh {@link Rpc0Server} per call.
    *
    * <p>Use this when deploying multiple server instances behind one port:
+   *
    * <pre>
    * Supplier&lt;Rpc0Server&gt; supplier = builder.buildSupplier();
    * vertx.deployVerticle(supplier::get, new DeploymentOptions().setInstances(4));
    * </pre>
    *
-   * <p>The builder's current configuration is snapshotted at the time this method
-   * is called — subsequent mutations to the builder (additional {@code addBinding}
-   * / {@code setKeepAliveDuration} calls) do not affect the returned supplier.
-   * The empty-registry check is performed eagerly here, not at supplier-invocation
-   * time, so misconfiguration surfaces at the build call site.
+   * <p>The builder's current configuration is snapshotted at the time this method is called —
+   * subsequent mutations to the builder (additional {@code addBinding} / {@code
+   * setKeepAliveDuration} calls) do not affect the returned supplier. The empty-registry check is
+   * performed eagerly here, not at supplier-invocation time, so misconfiguration surfaces at the
+   * build call site.
    */
   public Supplier<Rpc0Server> buildSupplier() {
     Preconditions.checkArgument(!registry.isEmpty(), "No service has been registered!");

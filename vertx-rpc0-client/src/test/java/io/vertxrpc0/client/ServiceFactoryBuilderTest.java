@@ -45,7 +45,8 @@ public class ServiceFactoryBuilderTest {
   @Test
   public void registerServiceRejectsConcreteClass(Vertx vertx) {
     ServiceFactoryBuilder builder = new ServiceFactoryBuilder(vertx, "localhost", 7777);
-    assertThrows(IllegalArgumentException.class, () -> builder.registerService(NotAnInterface.class));
+    assertThrows(
+        IllegalArgumentException.class, () -> builder.registerService(NotAnInterface.class));
   }
 
   @Test
@@ -57,8 +58,14 @@ public class ServiceFactoryBuilderTest {
 
   @Test
   public void buildProducesUsableFactory(Vertx vertx) {
-    ServiceFactoryBuilder builder = new ServiceFactoryBuilder(vertx, "localhost", 7777,
-            new NetClientOptions(), Duration.ofSeconds(1), getClass().getClassLoader());
+    ServiceFactoryBuilder builder =
+        new ServiceFactoryBuilder(
+            vertx,
+            "localhost",
+            7777,
+            new NetClientOptions(),
+            Duration.ofSeconds(1),
+            getClass().getClassLoader());
     builder.registerService(DemoService.class);
     ServiceFactory factory = builder.build();
     assertNotNull(factory);
@@ -66,7 +73,8 @@ public class ServiceFactoryBuilderTest {
 
   @Test
   public void constructorRejectsNullVertx() {
-    assertThrows(NullPointerException.class, () -> new ServiceFactoryBuilder(null, "localhost", 7777));
+    assertThrows(
+        NullPointerException.class, () -> new ServiceFactoryBuilder(null, "localhost", 7777));
   }
 
   @Test
@@ -76,7 +84,8 @@ public class ServiceFactoryBuilderTest {
 
   @Test
   public void buildSupplierProducesFreshInstancesPerCall(Vertx vertx) {
-    Supplier<ServiceFactory> supplier = new ServiceFactoryBuilder(vertx, "localhost", 7777)
+    Supplier<ServiceFactory> supplier =
+        new ServiceFactoryBuilder(vertx, "localhost", 7777)
             .registerService(DemoService.class)
             .buildSupplier();
     ServiceFactory a = supplier.get();
@@ -90,8 +99,8 @@ public class ServiceFactoryBuilderTest {
 
   @Test
   public void buildSupplierSnapshotsConfig(Vertx vertx) throws Exception {
-    ServiceFactoryBuilder builder = new ServiceFactoryBuilder(vertx, "localhost", 7777)
-            .registerService(DemoService.class);
+    ServiceFactoryBuilder builder =
+        new ServiceFactoryBuilder(vertx, "localhost", 7777).registerService(DemoService.class);
     Supplier<ServiceFactory> supplier = builder.buildSupplier();
 
     // Mutate the builder after snapshotting.
@@ -107,15 +116,15 @@ public class ServiceFactoryBuilderTest {
   }
 
   /**
-   * The supplier path must defer {@code vertx.getOrCreateContext()} to
-   * {@code get()} call time, not snapshot it at {@code buildSupplier()} time.
-   * Otherwise a Verticle calling the supplier in its {@code start()} would
-   * inherit the builder's context instead of its own. Deploying a Verticle
-   * is the cleanest way to force a separate context.
+   * The supplier path must defer {@code vertx.getOrCreateContext()} to {@code get()} call time, not
+   * snapshot it at {@code buildSupplier()} time. Otherwise a Verticle calling the supplier in its
+   * {@code start()} would inherit the builder's context instead of its own. Deploying a Verticle is
+   * the cleanest way to force a separate context.
    */
   @Test
   public void buildSupplierCapturesContextAtCallTime(Vertx vertx, VertxTestContext ctx) {
-    Supplier<ServiceFactory> supplier = new ServiceFactoryBuilder(vertx, "localhost", 7777)
+    Supplier<ServiceFactory> supplier =
+        new ServiceFactoryBuilder(vertx, "localhost", 7777)
             .registerService(DemoService.class)
             .buildSupplier();
 
@@ -125,21 +134,32 @@ public class ServiceFactoryBuilderTest {
     AtomicReference<ContextInternal> verticleCtxRef = new AtomicReference<>();
     AtomicReference<ServiceFactory> factoryRef = new AtomicReference<>();
 
-    vertx.deployVerticle(new io.vertx.core.AbstractVerticle() {
-      @Override
-      public void start() {
-        verticleCtxRef.set((ContextInternal) context);
-        factoryRef.set(supplier.get());
-      }
-    }).onComplete(ctx.succeeding(deploymentId -> ctx.verify(() -> {
-      ContextInternal verticleCtx = verticleCtxRef.get();
-      ContextInternal captured = readSupplierContext(factoryRef.get());
-      assertSame(verticleCtx, captured,
-              "supplier must capture the calling Verticle's context");
-      assertNotSame(outerCtx, captured,
-              "supplier must NOT capture the builder-thread's context");
-      ctx.completeNow();
-    })));
+    vertx
+        .deployVerticle(
+            new io.vertx.core.AbstractVerticle() {
+              @Override
+              public void start() {
+                verticleCtxRef.set((ContextInternal) context);
+                factoryRef.set(supplier.get());
+              }
+            })
+        .onComplete(
+            ctx.succeeding(
+                deploymentId ->
+                    ctx.verify(
+                        () -> {
+                          ContextInternal verticleCtx = verticleCtxRef.get();
+                          ContextInternal captured = readSupplierContext(factoryRef.get());
+                          assertSame(
+                              verticleCtx,
+                              captured,
+                              "supplier must capture the calling Verticle's context");
+                          assertNotSame(
+                              outerCtx,
+                              captured,
+                              "supplier must NOT capture the builder-thread's context");
+                          ctx.completeNow();
+                        })));
   }
 
   interface DemoService {}

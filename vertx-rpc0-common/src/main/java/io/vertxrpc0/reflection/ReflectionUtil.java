@@ -13,7 +13,6 @@ import java.util.Map;
  */
 public final class ReflectionUtil {
 
-
   private ReflectionUtil() {
     throw new IllegalStateException();
   }
@@ -23,14 +22,13 @@ public final class ReflectionUtil {
   }
 
   public static Class<?> getCollectionElementType(Type type) {
-    return (Class<?>) GenericsUtil.resolveTypeParameters(Collection.class, Collection.class, type)[0];
+    return (Class<?>)
+        GenericsUtil.resolveTypeParameters(Collection.class, Collection.class, type)[0];
   }
 
   public static Map.Entry<Class<?>, Class<?>> getMapKeyValueType(Type type) {
     Type[] parameterTypes = GenericsUtil.resolveTypeParameters(Map.class, Map.class, type);
     return new AbstractMap.SimpleEntry<>(
-            (Class<?>) parameterTypes[0],
-            (Class<?>) parameterTypes[1]
-    );
+        (Class<?>) parameterTypes[0], (Class<?>) parameterTypes[1]);
   }
 }

@@ -37,11 +37,13 @@ public class BeanServiceImpl implements BeanService {
       return Future.succeededFuture(Collections.emptyList());
     }
     return Future.succeededFuture(
-            idList.stream().map(s -> {
-              User user = User.generate();
-              user.setName(s);
-              return user;
-            }).collect(Collectors.toList())
-    );
+        idList.stream()
+            .map(
+                s -> {
+                  User user = User.generate();
+                  user.setName(s);
+                  return user;
+                })
+            .collect(Collectors.toList()));
   }
 }

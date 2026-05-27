@@ -16,16 +16,27 @@ public class InvokeSpecSerializerTest {
 
   @Test
   public void roundTripNoArgs() {
-    InvokeSpec spec = new InvokeSpec(1, 100L, "io.example.Svc", "ping",
-            MethodType.methodType(String.class), ParameterArray.create());
+    InvokeSpec spec =
+        new InvokeSpec(
+            1,
+            100L,
+            "io.example.Svc",
+            "ping",
+            MethodType.methodType(String.class),
+            ParameterArray.create());
     assertEquals(spec, KryoRoundtrip.roundtrip(kryo, spec));
   }
 
   @Test
   public void roundTripMixedArgs() {
-    InvokeSpec spec = new InvokeSpec(42, 12345L, "io.example.Svc", "doStuff",
+    InvokeSpec spec =
+        new InvokeSpec(
+            42,
+            12345L,
+            "io.example.Svc",
+            "doStuff",
             MethodType.methodType(String.class, int.class, String.class),
-            ParameterArray.create(new Object[]{7, "answer"}));
+            ParameterArray.create(new Object[] {7, "answer"}));
     assertEquals(spec, KryoRoundtrip.roundtrip(kryo, spec));
   }
 }

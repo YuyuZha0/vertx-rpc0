@@ -36,11 +36,14 @@ public class AppTest {
 
   @BeforeEach
   public void setUp(Vertx vertx, VertxTestContext ctx) {
-    Rpc0TestHarness.start(vertx, true).onComplete(ctx.succeeding(h -> {
-      harness = h;
-      factory = h.factory();
-      ctx.completeNow();
-    }));
+    Rpc0TestHarness.start(vertx, true)
+        .onComplete(
+            ctx.succeeding(
+                h -> {
+                  harness = h;
+                  factory = h.factory();
+                  ctx.completeNow();
+                }));
   }
 
   @AfterEach
@@ -51,63 +54,92 @@ public class AppTest {
   @Test
   public void doubleServiceAddsPair(VertxTestContext ctx) {
     DoubleService doubleService = factory.create(DoubleService.class);
-    doubleService.add(1D, 8D).onComplete(ctx.succeeding(result -> {
-      ctx.verify(() -> assertEquals(9D, result));
-      ctx.completeNow();
-    }));
+    doubleService
+        .add(1D, 8D)
+        .onComplete(
+            ctx.succeeding(
+                result -> {
+                  ctx.verify(() -> assertEquals(9D, result));
+                  ctx.completeNow();
+                }));
   }
 
   @Test
   public void doubleServiceAddsArray(VertxTestContext ctx) {
     DoubleService doubleService = factory.create(DoubleService.class);
-    doubleService.add(new Double[]{1D, 2D, 3D, 4D, 5D}).onComplete(ctx.succeeding(result -> {
-      ctx.verify(() -> assertEquals(15D, result));
-      ctx.completeNow();
-    }));
+    doubleService
+        .add(new Double[] {1D, 2D, 3D, 4D, 5D})
+        .onComplete(
+            ctx.succeeding(
+                result -> {
+                  ctx.verify(() -> assertEquals(15D, result));
+                  ctx.completeNow();
+                }));
   }
 
   @Test
   public void stringServiceSplit(VertxTestContext ctx) {
     StringService stringService = factory.create(StringService.class);
     String uuid = UUID.randomUUID().toString();
-    stringService.split(uuid, '-').onComplete(ctx.succeeding(result -> {
-      ctx.verify(() -> assertEquals(Arrays.asList(uuid.split("-")), result));
-      ctx.completeNow();
-    }));
+    stringService
+        .split(uuid, '-')
+        .onComplete(
+            ctx.succeeding(
+                result -> {
+                  ctx.verify(() -> assertEquals(Arrays.asList(uuid.split("-")), result));
+                  ctx.completeNow();
+                }));
   }
 
   @Test
   public void stringServiceQueryParamWithoutQuery(VertxTestContext ctx) {
     StringService stringService = factory.create(StringService.class);
     Checkpoint done = ctx.checkpoint(2);
-    stringService.getUrlQueryParam("http://example.com").onComplete(ctx.succeeding(result -> {
-      ctx.verify(() -> assertTrue(result.isEmpty()));
-      done.flag();
-    }));
-    stringService.getUrlQueryParam(null).onComplete(ctx.succeeding(result -> {
-      ctx.verify(() -> assertTrue(result.isEmpty()));
-      done.flag();
-    }));
+    stringService
+        .getUrlQueryParam("http://example.com")
+        .onComplete(
+            ctx.succeeding(
+                result -> {
+                  ctx.verify(() -> assertTrue(result.isEmpty()));
+                  done.flag();
+                }));
+    stringService
+        .getUrlQueryParam(null)
+        .onComplete(
+            ctx.succeeding(
+                result -> {
+                  ctx.verify(() -> assertTrue(result.isEmpty()));
+                  done.flag();
+                }));
   }
 
   @Test
   public void stringServiceQueryParamWithQuery(VertxTestContext ctx) {
     StringService stringService = factory.create(StringService.class);
-    stringService.getUrlQueryParam("http://example.com?a=111&b=222&c=hello")
-            .onComplete(ctx.succeeding(result -> {
-              ctx.verify(() ->
-                      assertEquals(ImmutableMap.of("a", "111", "b", "222", "c", "hello"), result));
-              ctx.completeNow();
-            }));
+    stringService
+        .getUrlQueryParam("http://example.com?a=111&b=222&c=hello")
+        .onComplete(
+            ctx.succeeding(
+                result -> {
+                  ctx.verify(
+                      () ->
+                          assertEquals(
+                              ImmutableMap.of("a", "111", "b", "222", "c", "hello"), result));
+                  ctx.completeNow();
+                }));
   }
 
   @Test
   public void timeServiceNullArgPropagatesError(VertxTestContext ctx) {
     TimeService timeService = factory.create(TimeService.class);
-    timeService.timeAfterNDays(null, 1).onComplete(ctx.failing(cause -> {
-      ctx.verify(() -> assertNotNull(cause));
-      ctx.completeNow();
-    }));
+    timeService
+        .timeAfterNDays(null, 1)
+        .onComplete(
+            ctx.failing(
+                cause -> {
+                  ctx.verify(() -> assertNotNull(cause));
+                  ctx.completeNow();
+                }));
   }
 
   @Test
@@ -116,14 +148,22 @@ public class AppTest {
     LocalDateTime time1 = LocalDateTime.now();
     LocalDateTime time2 = time1.plusDays(100);
     Checkpoint done = ctx.checkpoint(2);
-    timeService.timeAfterNDays(time1, 100).onComplete(ctx.succeeding(result -> {
-      ctx.verify(() -> assertEquals(time2, result));
-      done.flag();
-    }));
-    timeService.durationMills(time1, time2).onComplete(ctx.succeeding(result -> {
-      ctx.verify(() -> assertEquals(TimeUnit.DAYS.toMillis(100), (long) result));
-      done.flag();
-    }));
+    timeService
+        .timeAfterNDays(time1, 100)
+        .onComplete(
+            ctx.succeeding(
+                result -> {
+                  ctx.verify(() -> assertEquals(time2, result));
+                  done.flag();
+                }));
+    timeService
+        .durationMills(time1, time2)
+        .onComplete(
+            ctx.succeeding(
+                result -> {
+                  ctx.verify(() -> assertEquals(TimeUnit.DAYS.toMillis(100), (long) result));
+                  done.flag();
+                }));
   }
 
   @Test
@@ -136,9 +176,14 @@ public class AppTest {
   public void beanServiceRoundTrip(VertxTestContext ctx) {
     BeanService beanService = factory.create(BeanService.class);
     User user = User.generate();
-    beanService.serializeToJson(user).onComplete(ctx.succeeding(json -> {
-      ctx.verify(() -> assertEquals(harness.objectMapper().writeValueAsString(user), json));
-      ctx.completeNow();
-    }));
+    beanService
+        .serializeToJson(user)
+        .onComplete(
+            ctx.succeeding(
+                json -> {
+                  ctx.verify(
+                      () -> assertEquals(harness.objectMapper().writeValueAsString(user), json));
+                  ctx.completeNow();
+                }));
   }
 }

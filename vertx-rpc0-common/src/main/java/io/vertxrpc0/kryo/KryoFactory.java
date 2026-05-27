@@ -55,40 +55,39 @@ import lombok.NonNull;
 public final class KryoFactory implements Supplier<Kryo> {
 
   private static final Set<Class<?>> VALUE_TYPES =
-          //ImmutableCollection keep it's insert order
-          ImmutableSet.<Class<?>>builder()
-                  .add(Byte.class)
-                  .add(Boolean.class)
-                  .add(Character.class)
-                  .add(Short.class)
-                  .add(Integer.class)
-                  .add(Float.class)
-                  .add(Double.class)
-                  .add(String.class)
-                  .add(BitSet.class)
-                  .add(URL.class)
-                  .add(Charset.class)
-                  .add(Currency.class)
-                  .add(BigInteger.class)
-                  .add(BigDecimal.class)
-                  .add(Date.class)
-                  .add(Calendar.class)
-                  .add(TimeZone.class)
-                  .add(LocalDate.class)
-                  .add(LocalTime.class)
-                  .add(LocalDateTime.class)
-                  .add(OffsetDateTime.class)
-                  .add(ZonedDateTime.class)
-                  .add(Duration.class)
-                  .add(ZoneId.class)
-                  .add(Instant.class)
-                  .build();
+      // ImmutableCollection keep it's insert order
+      ImmutableSet.<Class<?>>builder()
+          .add(Byte.class)
+          .add(Boolean.class)
+          .add(Character.class)
+          .add(Short.class)
+          .add(Integer.class)
+          .add(Float.class)
+          .add(Double.class)
+          .add(String.class)
+          .add(BitSet.class)
+          .add(URL.class)
+          .add(Charset.class)
+          .add(Currency.class)
+          .add(BigInteger.class)
+          .add(BigDecimal.class)
+          .add(Date.class)
+          .add(Calendar.class)
+          .add(TimeZone.class)
+          .add(LocalDate.class)
+          .add(LocalTime.class)
+          .add(LocalDateTime.class)
+          .add(OffsetDateTime.class)
+          .add(ZonedDateTime.class)
+          .add(Duration.class)
+          .add(ZoneId.class)
+          .add(Instant.class)
+          .build();
 
   private final ClassLoader classLoader;
   private final KryoRegistry registry;
 
-  public KryoFactory(@NonNull ClassLoader classLoader,
-                     @NonNull KryoRegistry registry) {
+  public KryoFactory(@NonNull ClassLoader classLoader, @NonNull KryoRegistry registry) {
     this.classLoader = classLoader;
     this.registry = registry;
   }
@@ -104,11 +103,10 @@ public final class KryoFactory implements Supplier<Kryo> {
   public static boolean isValueOrValueArrayType(Class<?> type) {
     Class<?> componentType;
     return type != null
-           && (VALUE_TYPES.contains(type)
-               || (type.isArray()
-                   && ((componentType = type.getComponentType()).isPrimitive()
-                       || VALUE_TYPES.contains(componentType)
-                   )));
+        && (VALUE_TYPES.contains(type)
+            || (type.isArray()
+                && ((componentType = type.getComponentType()).isPrimitive()
+                    || VALUE_TYPES.contains(componentType))));
   }
 
   @Override
@@ -157,7 +155,8 @@ public final class KryoFactory implements Supplier<Kryo> {
     for (Class<?> type : getValueTypes()) {
       if (type != String.class) {
         Class<?> arrayType = Array.newInstance(type, 0).getClass();
-        kryo.register(arrayType, new DefaultArraySerializers.ObjectArraySerializer(kryo, arrayType));
+        kryo.register(
+            arrayType, new DefaultArraySerializers.ObjectArraySerializer(kryo, arrayType));
       }
     }
   }
@@ -172,7 +171,9 @@ public final class KryoFactory implements Supplier<Kryo> {
     kryo.register(PriorityQueue.class);
 
     kryo.register(List.class, new RestrictedCollectionSerializer<>(Sized.of(ArrayList::new)));
-    kryo.register(Set.class, new RestrictedCollectionSerializer<>(Sized.of(Sets::newHashSetWithExpectedSize)));
+    kryo.register(
+        Set.class,
+        new RestrictedCollectionSerializer<>(Sized.of(Sets::newHashSetWithExpectedSize)));
     kryo.register(Queue.class, new RestrictedCollectionSerializer<>(Sized.of(ArrayDeque::new)));
     kryo.register(Deque.class, new RestrictedCollectionSerializer<>(Sized.of(ArrayDeque::new)));
     kryo.register(SortedSet.class, new RestrictedSortedSetSerializer<>(Sorted.of(TreeSet::new)));
@@ -186,7 +187,8 @@ public final class KryoFactory implements Supplier<Kryo> {
     kryo.register(TreeMap.class);
     kryo.register(Properties.class, new PropertiesSerializer());
 
-    kryo.register(Map.class, new RestrictedMapSerializer<>(Sized.of(Maps::newHashMapWithExpectedSize)));
+    kryo.register(
+        Map.class, new RestrictedMapSerializer<>(Sized.of(Maps::newHashMapWithExpectedSize)));
     kryo.register(SortedMap.class, new RestrictedSortedMapSerializer<>(Sorted.of(TreeMap::new)));
     kryo.register(ImmutableMap.class, new ImmutableMapSerializer<>());
   }

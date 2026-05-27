@@ -12,8 +12,8 @@ import java.io.Serializable;
  */
 public final class Prefix implements Serializable {
 
-
-  private static final byte[] MAGIC = Shorts.toByteArray((short) 1729); //https://en.wikipedia.org/wiki/1729_(number)
+  private static final byte[] MAGIC =
+      Shorts.toByteArray((short) 1729); // https://en.wikipedia.org/wiki/1729_(number)
 
   private Prefix() {
     throw new IllegalStateException();
@@ -22,7 +22,6 @@ public final class Prefix implements Serializable {
   public static int prefixLen() {
     return 6;
   }
-
 
   public static ByteBuf prependTo(ByteBuf byteBuf) {
     int len = byteBuf.readableBytes();
@@ -38,8 +37,6 @@ public final class Prefix implements Serializable {
   }
 
   public static boolean isMagicMatch(byte[] magic) {
-    return magic.length == 2
-           && magic[0] == MAGIC[0]
-           && magic[1] == MAGIC[1];
+    return magic.length == 2 && magic[0] == MAGIC[0] && magic[1] == MAGIC[1];
   }
 }

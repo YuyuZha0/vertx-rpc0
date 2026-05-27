@@ -41,7 +41,8 @@ public final class PropertiesSerializer extends Serializer<Properties> {
     }
     ByteBuf buf = Unpooled.buffer();
     try (OutputStream outputStream = new ByteBufOutputStream(buf)) {
-      try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
+      try (OutputStreamWriter outputStreamWriter =
+          new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
         try (BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter)) {
           properties.store(bufferedWriter, null);
         }

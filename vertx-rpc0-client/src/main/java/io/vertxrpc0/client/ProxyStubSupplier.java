@@ -18,9 +18,9 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Caches a single {@link ProxyStub} per supplier instance, reconnecting on demand with
- * exponential backoff. The cached future is shared across concurrent callers so failed
- * connect attempts collapse into one round-trip and don't trigger a connect storm.
+ * Caches a single {@link ProxyStub} per supplier instance, reconnecting on demand with exponential
+ * backoff. The cached future is shared across concurrent callers so failed connect attempts
+ * collapse into one round-trip and don't trigger a connect storm.
  *
  * @author fishzhao
  * @since 2022-01-25
@@ -34,12 +34,12 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
   // Wheel timer is used by ProxyStub for per-RPC call timeouts (off the event loop).
   // Reconnect scheduling instead uses ContextInternal#setTimer so the clear runs on the
   // same event loop where futureRef is mutated.
-  private final Timer timer = new HashedWheelTimer(
+  private final Timer timer =
+      new HashedWheelTimer(
           new ThreadFactoryBuilder()
-                  .setDaemon(true)
-                  .setNameFormat("vertx-rpc0-timeout-ticker-%d")
-                  .build()
-  );
+              .setDaemon(true)
+              .setNameFormat("vertx-rpc0-timeout-ticker-%d")
+              .build());
   private final AtomicBoolean closed = new AtomicBoolean(false);
   private final AtomicReference<Future<ProxyStub>> futureRef = new AtomicReference<>(null);
 
@@ -55,30 +55,39 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
   // Touched only from the supplier's Vert.x context — no atomicity needed.
   private int consecutiveFailures = 0;
 
-  ProxyStubSupplier(@NonNull ContextInternal context,
-                    @NonNull NetClient netClient,
-                    @NonNull MessageTransport messageTransport,
-                    @NonNull Duration timeout,
-                    @NonNull String host,
-                    int port) {
-    this(context, netClient, messageTransport, timeout, host, port,
-            DEFAULT_INITIAL_BACKOFF, DEFAULT_MAX_BACKOFF);
+  ProxyStubSupplier(
+      @NonNull ContextInternal context,
+      @NonNull NetClient netClient,
+      @NonNull MessageTransport messageTransport,
+      @NonNull Duration timeout,
+      @NonNull String host,
+      int port) {
+    this(
+        context,
+        netClient,
+        messageTransport,
+        timeout,
+        host,
+        port,
+        DEFAULT_INITIAL_BACKOFF,
+        DEFAULT_MAX_BACKOFF);
   }
 
-  ProxyStubSupplier(@NonNull ContextInternal context,
-                    @NonNull NetClient netClient,
-                    @NonNull MessageTransport messageTransport,
-                    @NonNull Duration timeout,
-                    @NonNull String host,
-                    int port,
-                    @NonNull Duration initialBackoff,
-                    @NonNull Duration maxBackoff) {
+  ProxyStubSupplier(
+      @NonNull ContextInternal context,
+      @NonNull NetClient netClient,
+      @NonNull MessageTransport messageTransport,
+      @NonNull Duration timeout,
+      @NonNull String host,
+      int port,
+      @NonNull Duration initialBackoff,
+      @NonNull Duration maxBackoff) {
     if (initialBackoff.isZero() || initialBackoff.isNegative()) {
       throw new IllegalArgumentException("initialBackoff must be positive: " + initialBackoff);
     }
     if (maxBackoff.compareTo(initialBackoff) < 0) {
       throw new IllegalArgumentException(
-              "maxBackoff (" + maxBackoff + ") must be >= initialBackoff (" + initialBackoff + ")");
+          "maxBackoff (" + maxBackoff + ") must be >= initialBackoff (" + initialBackoff + ")");
     }
     this.context = context;
     this.netClient = netClient;
@@ -117,41 +126,49 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
     Future<ProxyStub> newFuture = promise.future();
     futureRef.set(newFuture);
 
-    netClient.connect(port, host).onComplete(result -> {
-      if (result.succeeded()) {
-        NetSocket socket = result.result();
-        try {
-          ProxyStub stub = new ProxyStub(socket, messageTransport, timer, timeout);
-          stub.registerHandlers(() -> onConnectionDispose(newFuture));
-          consecutiveFailures = 0;
-          log.info("Open connection to [{}] successfully", socket.remoteAddress());
-          promise.complete(stub);
-        } catch (Throwable cause) {
-          socket.close();
-          handleConnectFailure(promise, newFuture, cause);
-        }
-      } else {
-        handleConnectFailure(promise, newFuture, result.cause());
-      }
-    });
+    netClient
+        .connect(port, host)
+        .onComplete(
+            result -> {
+              if (result.succeeded()) {
+                NetSocket socket = result.result();
+                try {
+                  ProxyStub stub = new ProxyStub(socket, messageTransport, timer, timeout);
+                  stub.registerHandlers(() -> onConnectionDispose(newFuture));
+                  consecutiveFailures = 0;
+                  log.info("Open connection to [{}] successfully", socket.remoteAddress());
+                  promise.complete(stub);
+                } catch (Throwable cause) {
+                  socket.close();
+                  handleConnectFailure(promise, newFuture, cause);
+                }
+              } else {
+                handleConnectFailure(promise, newFuture, result.cause());
+              }
+            });
   }
 
-  private void handleConnectFailure(Promise<ProxyStub> promise,
-                                    Future<ProxyStub> newFuture,
-                                    Throwable cause) {
+  private void handleConnectFailure(
+      Promise<ProxyStub> promise, Future<ProxyStub> newFuture, Throwable cause) {
     consecutiveFailures++;
     long backoff = computeBackoffMillis(consecutiveFailures);
-    log.warn("Connect to [{}:{}] failed (attempt #{}); next attempt in {}ms: {}",
-            host, port, consecutiveFailures, backoff,
-            cause == null ? "<no cause>" : cause.toString());
+    log.warn(
+        "Connect to [{}:{}] failed (attempt #{}); next attempt in {}ms: {}",
+        host,
+        port,
+        consecutiveFailures,
+        backoff,
+        cause == null ? "<no cause>" : cause.toString());
     // Hold the failed future in cache for the backoff window: concurrent callers fail
     // fast on the cached failure instead of opening parallel connects. The clear runs on
     // the supplier's event loop, same as every other futureRef mutation.
-    context.setTimer(backoff, id -> {
-      if (isActive()) {
-        futureRef.compareAndSet(newFuture, null);
-      }
-    });
+    context.setTimer(
+        backoff,
+        id -> {
+          if (isActive()) {
+            futureRef.compareAndSet(newFuture, null);
+          }
+        });
     promise.tryFail(cause);
   }
 
@@ -185,25 +202,29 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
       return;
     }
     Promise<Void> drain = Promise.promise();
-    drain.future().onComplete(ar -> {
-      try {
-        timer.stop();
-      } catch (Exception ignored) {
-      }
-      completion.handle(ar);
-    });
+    drain
+        .future()
+        .onComplete(
+            ar -> {
+              try {
+                timer.stop();
+              } catch (Exception ignored) {
+              }
+              completion.handle(ar);
+            });
     Future<ProxyStub> future = futureRef.getAndSet(null);
     if (future == null) {
       drain.complete();
       return;
     }
-    future.onComplete(result -> {
-      if (result.succeeded()) {
-        result.result().close(drain);
-      } else {
-        // Failed future means there's no stub to close; just unwind.
-        drain.complete();
-      }
-    });
+    future.onComplete(
+        result -> {
+          if (result.succeeded()) {
+            result.result().close(drain);
+          } else {
+            // Failed future means there's no stub to close; just unwind.
+            drain.complete();
+          }
+        });
   }
 }

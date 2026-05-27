@@ -31,7 +31,8 @@ import lombok.RequiredArgsConstructor;
  * @since 2021-12-22
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ParameterArray extends AbstractList<Object> implements RandomAccess, Serializable {
+public final class ParameterArray extends AbstractList<Object>
+    implements RandomAccess, Serializable {
 
   private static final ParameterArray EMPTY = new ParameterArray(new Object[0]);
   private static final long serialVersionUID = -4941793371869143569L;
@@ -77,11 +78,7 @@ public final class ParameterArray extends AbstractList<Object> implements Random
   }
 
   private static String paramStr(Object o) {
-    return o != null
-            ? Strings.lenientFormat(
-            "<%s:%s>",
-            o, o.getClass().getSimpleName()
-    ) : "null";
+    return o != null ? Strings.lenientFormat("<%s:%s>", o, o.getClass().getSimpleName()) : "null";
   }
 
   private static boolean notMatch(Object o, Class<?> type) {
@@ -150,7 +147,9 @@ public final class ParameterArray extends AbstractList<Object> implements Random
 
   @Override
   public String toString() {
-    return Arrays.stream(parameters).map(ParameterArray::paramStr).collect(Collectors.joining(", ", "[", "]"));
+    return Arrays.stream(parameters)
+        .map(ParameterArray::paramStr)
+        .collect(Collectors.joining(", ", "[", "]"));
   }
 
   @Override

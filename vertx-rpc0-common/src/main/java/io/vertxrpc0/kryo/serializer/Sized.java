@@ -37,5 +37,4 @@ public final class Sized<T> {
     if (collection instanceof ArrayList) ((ArrayList<?>) collection).ensureCapacity(size);
     return collection;
   }
-
 }

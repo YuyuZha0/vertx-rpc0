@@ -2,9 +2,8 @@ package io.vertxrpc0.service.impl;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
-import io.vertxrpc0.service.StringService;
 import io.vertx.core.Future;
-
+import io.vertxrpc0.service.StringService;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

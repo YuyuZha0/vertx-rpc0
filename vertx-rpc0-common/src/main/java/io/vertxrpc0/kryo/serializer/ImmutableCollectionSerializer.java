@@ -20,7 +20,8 @@ import java.util.SortedSet;
  * @author fishzhao
  * @since 2022-02-17
  */
-public final class ImmutableCollectionSerializer<T extends ImmutableCollection<?>> extends ImmutableSerializer<T> {
+public final class ImmutableCollectionSerializer<T extends ImmutableCollection<?>>
+    extends ImmutableSerializer<T> {
 
   private static final byte LIST = 1;
   private static final byte SET = 2;
@@ -48,7 +49,8 @@ public final class ImmutableCollectionSerializer<T extends ImmutableCollection<?
     } else if (collection instanceof ImmutableSet) {
       output.writeByte(SET);
     } else {
-      throw new KryoException("Unsupported immutable collection type: " + collection.getClass().getTypeName());
+      throw new KryoException(
+          "Unsupported immutable collection type: " + collection.getClass().getTypeName());
     }
     int length = collection.size();
     output.writeVarInt(length + 1, true);

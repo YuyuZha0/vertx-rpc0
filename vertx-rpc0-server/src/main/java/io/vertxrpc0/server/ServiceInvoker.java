@@ -42,17 +42,22 @@ final class ServiceInvoker implements ParserHandler {
 
   private final TLongSet acceptedRequestIdSet = new TLongHashSet();
   private final AtomicLong lastActiveTime = new AtomicLong(System.currentTimeMillis());
+
   @Getter(AccessLevel.PACKAGE)
   private final NetSocket socket;
+
   private final MessageTransport messageTransport;
   private final ServiceLookup serviceLookup;
 
   private static String buildErrorMessage(Throwable cause) {
-    return Strings.lenientFormat("%s(\"%s\")",
-            cause.getClass().getTypeName(), Throwables.getRootCause(cause).getMessage());
+    return Strings.lenientFormat(
+        "%s(\"%s\")", cause.getClass().getTypeName(), Throwables.getRootCause(cause).getMessage());
   }
 
-  /** The {@link ByteBufAllocator} from the underlying channel — the only spot that needs the internal API. */
+  /**
+   * The {@link ByteBufAllocator} from the underlying channel — the only spot that needs the
+   * internal API.
+   */
   private ByteBufAllocator alloc() {
     return ((NetSocketInternal) socket).channelHandlerContext().alloc();
   }
@@ -60,44 +65,39 @@ final class ServiceInvoker implements ParserHandler {
   void registerHandlers(Runnable dispose) {
     socket.handler(new MarkedLenMessageHandler(this));
     SocketAddress socketAddress = socket.remoteAddress();
-    socket.closeHandler(v -> {
-      lastActiveTime.set(-1L);
-      if (dispose != null) {
-        try {
-          dispose.run();
-        } catch (Exception ignore) {
-        }
-      }
-      log.info("Close connection with: {}", socketAddress);
-    });
+    socket.closeHandler(
+        v -> {
+          lastActiveTime.set(-1L);
+          if (dispose != null) {
+            try {
+              dispose.run();
+            } catch (Exception ignore) {
+            }
+          }
+          log.info("Close connection with: {}", socketAddress);
+        });
   }
 
   @Override
   public void fatal(Throwable cause) {
     log.error("Fatal error on [{}]: ", socket.remoteAddress(), cause);
-    ResultCode resultCode = cause instanceof KryoException
-            ? ResultCode.PROTOCOL_ERROR : ResultCode.UNKNOWN_ERROR;
+    ResultCode resultCode =
+        cause instanceof KryoException ? ResultCode.PROTOCOL_ERROR : ResultCode.UNKNOWN_ERROR;
     if (acceptedRequestIdSet.isEmpty()) {
       socket.close();
       return;
     }
     long time = System.currentTimeMillis();
     String msg = buildErrorMessage(cause);
-    @SuppressWarnings("rawtypes") List<Future> futures = new ArrayList<>();
+    @SuppressWarnings("rawtypes")
+    List<Future> futures = new ArrayList<>();
     for (long requestId : acceptedRequestIdSet.toArray()) {
-      InvokeResult result = new InvokeResult(
-              requestId,
-              time,
-              resultCode,
-              msg,
-              null
-      );
+      InvokeResult result = new InvokeResult(requestId, time, resultCode, msg, null);
       Promise<Void> promise = Promise.promise();
       writeResult(result, promise);
       futures.add(promise.future());
     }
-    CompositeFuture.join(futures)
-            .onComplete(ar -> socket.close());
+    CompositeFuture.join(futures).onComplete(ar -> socket.close());
   }
 
   // This method associated with the same event-loop, so it's thread-safe
@@ -106,102 +106,102 @@ final class ServiceInvoker implements ParserHandler {
     InvokeSpec invokeSpec = (InvokeSpec) messageTransport.deserialize(BufferUtil.toByteBuf(event));
     long requestId = invokeSpec.getRequestId();
     if (!invokeSpec.getParameters().isTypeMatch(invokeSpec.getMethodType())) {
-      fail(requestId, ResultCode.PARAMETER_ERROR,
-              "Parameter type not match: %s, %s", invokeSpec.getMethodType(), invokeSpec.getParameters()
-      );
+      fail(
+          requestId,
+          ResultCode.PARAMETER_ERROR,
+          "Parameter type not match: %s, %s",
+          invokeSpec.getMethodType(),
+          invokeSpec.getParameters());
       return;
     }
     if (!acceptedRequestIdSet.add(requestId)) {
-      fail(requestId, ResultCode.PARAMETER_ERROR,
-              "Duplicated requestId: %s", requestId);
+      fail(requestId, ResultCode.PARAMETER_ERROR, "Duplicated requestId: %s", requestId);
       return;
     }
     MethodHandle methodHandle;
     try {
       methodHandle = serviceLookup.lookup(invokeSpec);
     } catch (Exception e) {
-      fail(requestId,
-              ResultCode.LOOKUP_ERROR,
-              "Exception while lookup method: %s", e.getMessage());
+      fail(requestId, ResultCode.LOOKUP_ERROR, "Exception while lookup method: %s", e.getMessage());
       return;
     }
     if (methodHandle == null) {
-      fail(requestId,
-              ResultCode.LOOKUP_ERROR,
-              "Method not found: \"%s\"", invokeSpec.getMethodName());
+      fail(
+          requestId,
+          ResultCode.LOOKUP_ERROR,
+          "Method not found: \"%s\"",
+          invokeSpec.getMethodName());
       return;
     }
     try {
       @SuppressWarnings("unchecked")
-      Future<Object> future = (Future<Object>) methodHandle
-              .invokeWithArguments(invokeSpec.getParameters());
-      future.onComplete(result -> {
-        if (result.succeeded()) {
-          Object ret = result.result();
-          Class<?> resultType = invokeSpec.getMethodType().returnType();
-          if (ret != null
-              && !(resultType.isInstance(ret))) {
-            fail(requestId, ResultCode.INVOCATION_ERROR,
-                    "Actual result type not match, required %s, but found: %s", resultType, ret.getClass());
-            return;
-          }
-          success(requestId, ret);
-        } else {
-          fail(requestId, ResultCode.INVOCATION_ERROR, result.cause());
-        }
-      });
+      Future<Object> future =
+          (Future<Object>) methodHandle.invokeWithArguments(invokeSpec.getParameters());
+      future.onComplete(
+          result -> {
+            if (result.succeeded()) {
+              Object ret = result.result();
+              Class<?> resultType = invokeSpec.getMethodType().returnType();
+              if (ret != null && !(resultType.isInstance(ret))) {
+                fail(
+                    requestId,
+                    ResultCode.INVOCATION_ERROR,
+                    "Actual result type not match, required %s, but found: %s",
+                    resultType,
+                    ret.getClass());
+                return;
+              }
+              success(requestId, ret);
+            } else {
+              fail(requestId, ResultCode.INVOCATION_ERROR, result.cause());
+            }
+          });
     } catch (Throwable cause) {
       fail(requestId, ResultCode.UNKNOWN_ERROR, cause);
     }
   }
 
   private void success(long requestId, Object object) {
-    InvokeResult invokeResult = new InvokeResult(
-            requestId,
-            System.currentTimeMillis(),
-            ResultCode.OK,
-            null,
-            object
-    );
+    InvokeResult invokeResult =
+        new InvokeResult(requestId, System.currentTimeMillis(), ResultCode.OK, null, object);
     writeResult(invokeResult, null);
   }
 
   private void fail(long requestId, ResultCode code, Throwable cause) {
-    InvokeResult invokeResult = new InvokeResult(
-            requestId,
-            System.currentTimeMillis(),
-            code,
-            buildErrorMessage(cause),
-            null
-    );
+    InvokeResult invokeResult =
+        new InvokeResult(
+            requestId, System.currentTimeMillis(), code, buildErrorMessage(cause), null);
     writeResult(invokeResult, null);
   }
 
   private void fail(long requestId, ResultCode code, String template, Object... args) {
-    InvokeResult invokeResult = new InvokeResult(
+    InvokeResult invokeResult =
+        new InvokeResult(
             requestId,
             System.currentTimeMillis(),
             code,
             Strings.lenientFormat(template, args),
-            null
-    );
+            null);
     writeResult(invokeResult, null);
   }
 
   private void writeResult(InvokeResult result, Promise<Void> promise) {
     lastActiveTime.set(result.getTimestamp());
     ByteBuf byteBuf = Prefix.prependTo(messageTransport.serialize(alloc(), result));
-    socket.write(BufferUtil.fromByteBuf(byteBuf)).onComplete(ar -> {
-      // NetSocket.write does not release the wrapped ByteBuf — see
-      // NetSocketByteBufOwnershipTest. Release it explicitly to avoid leaking
-      // pooled allocator memory.
-      ReferenceCountUtil.release(byteBuf);
-      // On the socket context, so this is thread-safe.
-      acceptedRequestIdSet.remove(result.getRequestId());
-      if (promise != null) {
-        promise.handle(ar);
-      }
-    });
+    socket
+        .write(BufferUtil.fromByteBuf(byteBuf))
+        .onComplete(
+            ar -> {
+              // NetSocket.write does not release the wrapped ByteBuf — see
+              // NetSocketByteBufOwnershipTest. Release it explicitly to avoid leaking
+              // pooled allocator memory.
+              ReferenceCountUtil.release(byteBuf);
+              // On the socket context, so this is thread-safe.
+              acceptedRequestIdSet.remove(result.getRequestId());
+              if (promise != null) {
+                promise.handle(ar);
+              }
+            });
   }
 
   long lastActiveTime() {

@@ -48,20 +48,46 @@ public class ProxyStubSupplierTest {
   public void constructorRejectsNonPositiveInitialBackoff(Vertx vertx) {
     ContextInternal context = contextOf(vertx);
     KryoMessageTransport transport = transport();
-    assertThrows(IllegalArgumentException.class, () -> new ProxyStubSupplier(
-            context, vertx.createNetClient(), transport, Duration.ofSeconds(1), "localhost", 1,
-            Duration.ZERO, Duration.ofSeconds(1)));
-    assertThrows(IllegalArgumentException.class, () -> new ProxyStubSupplier(
-            context, vertx.createNetClient(), transport, Duration.ofSeconds(1), "localhost", 1,
-            Duration.ofMillis(-1), Duration.ofSeconds(1)));
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            new ProxyStubSupplier(
+                context,
+                vertx.createNetClient(),
+                transport,
+                Duration.ofSeconds(1),
+                "localhost",
+                1,
+                Duration.ZERO,
+                Duration.ofSeconds(1)));
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            new ProxyStubSupplier(
+                context,
+                vertx.createNetClient(),
+                transport,
+                Duration.ofSeconds(1),
+                "localhost",
+                1,
+                Duration.ofMillis(-1),
+                Duration.ofSeconds(1)));
   }
 
   @Test
   public void constructorRejectsMaxBackoffSmallerThanInitial(Vertx vertx) {
-    assertThrows(IllegalArgumentException.class, () -> new ProxyStubSupplier(
-            contextOf(vertx), vertx.createNetClient(), transport(),
-            Duration.ofSeconds(1), "localhost", 1,
-            Duration.ofSeconds(5), Duration.ofSeconds(1)));
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            new ProxyStubSupplier(
+                contextOf(vertx),
+                vertx.createNetClient(),
+                transport(),
+                Duration.ofSeconds(1),
+                "localhost",
+                1,
+                Duration.ofSeconds(5),
+                Duration.ofSeconds(1)));
   }
 
   // ---------------------------------------------------------------------------
@@ -71,31 +97,42 @@ public class ProxyStubSupplierTest {
   /** Pure backoff-math test — reflection on a private method, no event loop interaction. */
   @Test
   public void backoffGrowsExponentiallyThenCaps(Vertx vertx) throws Exception {
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
-            contextOf(vertx), vertx.createNetClient(), transport(),
-            Duration.ofSeconds(1), "127.0.0.1", 1,
-            Duration.ofMillis(100), Duration.ofSeconds(2));
+    ProxyStubSupplier supplier =
+        new ProxyStubSupplier(
+            contextOf(vertx),
+            vertx.createNetClient(),
+            transport(),
+            Duration.ofSeconds(1),
+            "127.0.0.1",
+            1,
+            Duration.ofMillis(100),
+            Duration.ofSeconds(2));
 
-    java.lang.reflect.Method m = ProxyStubSupplier.class.getDeclaredMethod(
-            "computeBackoffMillis", int.class);
+    java.lang.reflect.Method m =
+        ProxyStubSupplier.class.getDeclaredMethod("computeBackoffMillis", int.class);
     m.setAccessible(true);
     assertEquals(100L, m.invoke(supplier, 1));
     assertEquals(200L, m.invoke(supplier, 2));
     assertEquals(400L, m.invoke(supplier, 3));
     assertEquals(800L, m.invoke(supplier, 4));
     assertEquals(1600L, m.invoke(supplier, 5));
-    assertEquals(2000L, m.invoke(supplier, 6));   // capped
+    assertEquals(2000L, m.invoke(supplier, 6)); // capped
     assertEquals(2000L, m.invoke(supplier, 100)); // still capped
-    assertEquals(2000L, m.invoke(supplier, 64));  // no overflow at large shift counts
+    assertEquals(2000L, m.invoke(supplier, 64)); // no overflow at large shift counts
   }
 
   @Test
   public void concurrentGetsShareTheSameInflightConnect(Vertx vertx, VertxTestContext ctx) {
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
+    ProxyStubSupplier supplier =
+        new ProxyStubSupplier(
             contextOf(vertx),
             vertx.createNetClient(new NetClientOptions().setConnectTimeout(200)),
-            transport(), Duration.ofSeconds(1), "127.0.0.1", unreachablePort(),
-            Duration.ofMillis(200), Duration.ofSeconds(1));
+            transport(),
+            Duration.ofSeconds(1),
+            "127.0.0.1",
+            unreachablePort(),
+            Duration.ofMillis(200),
+            Duration.ofSeconds(1));
 
     Future<ProxyStub> f1 = supplier.get();
     Future<ProxyStub> f2 = supplier.get();
@@ -104,81 +141,142 @@ public class ProxyStubSupplierTest {
     // Wait for ALL three to complete (regardless of outcome) before asserting:
     // f1's own onComplete handler fires before the supplier's internal forwarders to
     // f2/f3, so asserting inside f1.onComplete would race.
-    io.vertx.core.CompositeFuture.join(f1, f2, f3).onComplete(ar -> ctx.verify(() -> {
-      assertTrue(f1.failed());
-      assertTrue(f2.failed());
-      assertTrue(f3.failed());
-      ctx.completeNow();
-    }));
+    io.vertx.core.CompositeFuture.join(f1, f2, f3)
+        .onComplete(
+            ar ->
+                ctx.verify(
+                    () -> {
+                      assertTrue(f1.failed());
+                      assertTrue(f2.failed());
+                      assertTrue(f3.failed());
+                      ctx.completeNow();
+                    }));
   }
 
   @Test
   public void failedConnectsAreCachedDuringBackoffWindow(Vertx vertx, VertxTestContext ctx) {
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
+    ProxyStubSupplier supplier =
+        new ProxyStubSupplier(
             contextOf(vertx),
             vertx.createNetClient(new NetClientOptions().setConnectTimeout(200)),
-            transport(), Duration.ofSeconds(1), "127.0.0.1", unreachablePort(),
-            Duration.ofSeconds(5), Duration.ofSeconds(5));
+            transport(),
+            Duration.ofSeconds(1),
+            "127.0.0.1",
+            unreachablePort(),
+            Duration.ofSeconds(5),
+            Duration.ofSeconds(5));
 
     Future<ProxyStub> first = supplier.get();
-    first.onComplete(ctx.failing(cause -> ctx.verify(() -> {
-      // Within the 5s backoff window, .get() must return the same cached failed future.
-      Future<ProxyStub> second = supplier.get();
-      assertSame(first, second,
-              "concurrent .get() within backoff must return the cached future");
-      assertTrue(second.failed());
-      ctx.completeNow();
-    })));
+    first.onComplete(
+        ctx.failing(
+            cause ->
+                ctx.verify(
+                    () -> {
+                      // Within the 5s backoff window, .get() must return the same cached failed
+                      // future.
+                      Future<ProxyStub> second = supplier.get();
+                      assertSame(
+                          first,
+                          second,
+                          "concurrent .get() within backoff must return the cached future");
+                      assertTrue(second.failed());
+                      ctx.completeNow();
+                    })));
   }
 
   @Test
   public void successfulConnectIsCachedAndReused(Vertx vertx, VertxTestContext ctx) {
-    NetServer accept = vertx.createNetServer(
-            new NetServerOptions().setHost("127.0.0.1").setPort(0));
-    accept.connectHandler(sock -> { /* hold the connection open */ });
+    NetServer accept =
+        vertx.createNetServer(new NetServerOptions().setHost("127.0.0.1").setPort(0));
+    accept.connectHandler(
+        sock -> {
+          /* hold the connection open */
+        });
 
-    accept.listen().onComplete(ctx.succeeding(listening -> {
-      ProxyStubSupplier supplier = new ProxyStubSupplier(
-              contextOf(vertx), vertx.createNetClient(), transport(),
-              Duration.ofSeconds(1), "127.0.0.1", listening.actualPort());
+    accept
+        .listen()
+        .onComplete(
+            ctx.succeeding(
+                listening -> {
+                  ProxyStubSupplier supplier =
+                      new ProxyStubSupplier(
+                          contextOf(vertx),
+                          vertx.createNetClient(),
+                          transport(),
+                          Duration.ofSeconds(1),
+                          "127.0.0.1",
+                          listening.actualPort());
 
-      supplier.get().onComplete(ctx.succeeding(stub1 -> ctx.verify(() -> {
-        assertNotNull(stub1);
-        supplier.get().onComplete(ctx.succeeding(stub2 -> ctx.verify(() -> {
-          assertSame(stub1, stub2);
-          ctx.completeNow();
-        })));
-      })));
-    }));
+                  supplier
+                      .get()
+                      .onComplete(
+                          ctx.succeeding(
+                              stub1 ->
+                                  ctx.verify(
+                                      () -> {
+                                        assertNotNull(stub1);
+                                        supplier
+                                            .get()
+                                            .onComplete(
+                                                ctx.succeeding(
+                                                    stub2 ->
+                                                        ctx.verify(
+                                                            () -> {
+                                                              assertSame(stub1, stub2);
+                                                              ctx.completeNow();
+                                                            })));
+                                      })));
+                }));
   }
 
   @Test
   public void getAfterCloseFailsImmediately(Vertx vertx, VertxTestContext ctx) {
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
-            contextOf(vertx), vertx.createNetClient(), transport(),
-            Duration.ofSeconds(1), "127.0.0.1", 1);
+    ProxyStubSupplier supplier =
+        new ProxyStubSupplier(
+            contextOf(vertx),
+            vertx.createNetClient(),
+            transport(),
+            Duration.ofSeconds(1),
+            "127.0.0.1",
+            1);
     Promise<Void> closed = Promise.promise();
     supplier.close(closed);
-    closed.future().onComplete(ctx.succeeding(v -> ctx.verify(() -> {
-      Future<ProxyStub> f = supplier.get();
-      assertTrue(f.failed());
-      assertEquals("Connection unavailable for already closed!", f.cause().getMessage());
-      ctx.completeNow();
-    })));
+    closed
+        .future()
+        .onComplete(
+            ctx.succeeding(
+                v ->
+                    ctx.verify(
+                        () -> {
+                          Future<ProxyStub> f = supplier.get();
+                          assertTrue(f.failed());
+                          assertEquals(
+                              "Connection unavailable for already closed!", f.cause().getMessage());
+                          ctx.completeNow();
+                        })));
   }
 
   @Test
   public void closeTwiceFailsTheSecondCall(Vertx vertx, VertxTestContext ctx) {
-    ProxyStubSupplier supplier = new ProxyStubSupplier(
-            contextOf(vertx), vertx.createNetClient(), transport(),
-            Duration.ofSeconds(1), "127.0.0.1", 1);
+    ProxyStubSupplier supplier =
+        new ProxyStubSupplier(
+            contextOf(vertx),
+            vertx.createNetClient(),
+            transport(),
+            Duration.ofSeconds(1),
+            "127.0.0.1",
+            1);
     Promise<Void> first = Promise.promise();
     supplier.close(first);
-    first.future().onComplete(ctx.succeeding(v -> {
-      Promise<Void> second = Promise.promise();
-      supplier.close(second);
-      ctx.verify(() -> assertTrue(second.future().failed()));
-      ctx.completeNow();
-    }));
+    first
+        .future()
+        .onComplete(
+            ctx.succeeding(
+                v -> {
+                  Promise<Void> second = Promise.promise();
+                  supplier.close(second);
+                  ctx.verify(() -> assertTrue(second.future().failed()));
+                  ctx.completeNow();
+                }));
   }
 }

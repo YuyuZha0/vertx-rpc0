@@ -51,9 +51,7 @@ public class ImmutableCollectionSerializerTest {
     assertEquals(list2, roundtrip(list2));
     assertEquals(list2, copy(list2));
 
-    ImmutableList<Object> list3 = ImmutableList.of(
-            Math.PI, "hello", Set.of(1, 2, 3)
-    );
+    ImmutableList<Object> list3 = ImmutableList.of(Math.PI, "hello", Set.of(1, 2, 3));
     assertEquals(list3, roundtrip(list3));
   }
 
@@ -83,11 +81,9 @@ public class ImmutableCollectionSerializerTest {
     assertEquals(sortedSet2, roundtrip(sortedSet2));
     assertEquals(sortedSet2, copy(sortedSet2));
 
-    ImmutableSortedSet<Object> sortedSet3 = ImmutableSortedSet
-            .orderedBy(Ordering.usingToString())
-            .add("a", 2, "c", 4L, "e").build();
+    ImmutableSortedSet<Object> sortedSet3 =
+        ImmutableSortedSet.orderedBy(Ordering.usingToString()).add("a", 2, "c", 4L, "e").build();
     assertEquals(sortedSet3, roundtrip(sortedSet3));
     assertEquals(sortedSet3, copy(sortedSet3));
   }
-
 }

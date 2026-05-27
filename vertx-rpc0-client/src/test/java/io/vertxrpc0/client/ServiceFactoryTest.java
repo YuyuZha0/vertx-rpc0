@@ -70,26 +70,34 @@ public class ServiceFactoryTest {
     for (int i = 0; i < threads; i++) {
       Promise<ServiceA> p = Promise.promise();
       results.add(p.future());
-      pool.submit(() -> {
-        try {
-          start.await();
-          p.tryComplete(factory.getOrCreate(ServiceA.class));
-        } catch (Throwable t) {
-          p.tryFail(t);
-        }
-      });
+      pool.submit(
+          () -> {
+            try {
+              start.await();
+              p.tryComplete(factory.getOrCreate(ServiceA.class));
+            } catch (Throwable t) {
+              p.tryFail(t);
+            }
+          });
     }
     start.countDown();
     pool.shutdown();
 
-    CompositeFuture.all(new ArrayList<>(results)).onComplete(ctx.succeeding(cf -> ctx.verify(() -> {
-      ServiceA first = cf.resultAt(0);
-      for (int i = 1; i < threads; i++) {
-        assertSame(first, cf.resultAt(i),
-                "all threads should see the same cached proxy instance");
-      }
-      ctx.completeNow();
-    })));
+    CompositeFuture.all(new ArrayList<>(results))
+        .onComplete(
+            ctx.succeeding(
+                cf ->
+                    ctx.verify(
+                        () -> {
+                          ServiceA first = cf.resultAt(0);
+                          for (int i = 1; i < threads; i++) {
+                            assertSame(
+                                first,
+                                cf.resultAt(i),
+                                "all threads should see the same cached proxy instance");
+                          }
+                          ctx.completeNow();
+                        })));
   }
 
   @Test

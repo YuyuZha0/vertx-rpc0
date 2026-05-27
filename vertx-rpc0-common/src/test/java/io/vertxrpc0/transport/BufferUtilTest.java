@@ -48,7 +48,7 @@ public class BufferUtilTest {
   public void toByteBufReturnsIndependentIndices() {
     // BufferImpl#getByteBuf returns a slice with its own reader/writer indices.
     // Draining the returned ByteBuf must not affect subsequent reads from the source Buffer.
-    Buffer buffer = Buffer.buffer(new byte[]{1, 2, 3, 4});
+    Buffer buffer = Buffer.buffer(new byte[] {1, 2, 3, 4});
 
     ByteBuf byteBuf = BufferUtil.toByteBuf(buffer);
     byteBuf.readBytes(new byte[byteBuf.readableBytes()]);

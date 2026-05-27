@@ -30,11 +30,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * End-to-end test for {@code Rpc0ServerBuilder.buildSupplier()} and
- * {@code ServiceFactoryBuilder.buildSupplier()}: deploys {@value #SERVER_INSTANCES}
- * server verticles behind one port via Vert.x port-sharing, then {@value #CLIENT_VERTICLES}
- * client verticles each minting its own factory inside {@code start()}. Asserts
- * traffic reaches more than one server event loop.
+ * End-to-end test for {@code Rpc0ServerBuilder.buildSupplier()} and {@code
+ * ServiceFactoryBuilder.buildSupplier()}: deploys {@value #SERVER_INSTANCES} server verticles
+ * behind one port via Vert.x port-sharing, then {@value #CLIENT_VERTICLES} client verticles each
+ * minting its own factory inside {@code start()}. Asserts traffic reaches more than one server
+ * event loop.
  */
 @ExtendWith(VertxExtension.class)
 @Timeout(value = 30, timeUnit = TimeUnit.SECONDS)
@@ -57,13 +57,13 @@ public class MultiVerticleDeploymentTest {
     int port = findFreePort();
 
     ThreadCountingHello impl = new ThreadCountingHello();
-    Supplier<Rpc0Server> serverSupplier = new Rpc0ServerBuilder(
-            vertx,
-            new NetServerOptions().setHost("127.0.0.1").setPort(port))
+    Supplier<Rpc0Server> serverSupplier =
+        new Rpc0ServerBuilder(vertx, new NetServerOptions().setHost("127.0.0.1").setPort(port))
             .addBinding(HelloService.class, impl)
             .buildSupplier();
 
-    Supplier<ServiceFactory> clientSupplier = new ServiceFactoryBuilder(vertx, "127.0.0.1", port)
+    Supplier<ServiceFactory> clientSupplier =
+        new ServiceFactoryBuilder(vertx, "127.0.0.1", port)
             .registerService(HelloService.class)
             .buildSupplier();
 
@@ -72,40 +72,54 @@ public class MultiVerticleDeploymentTest {
     AtomicInteger callsDone = new AtomicInteger();
     Promise<Void> allDone = Promise.promise();
 
-    Supplier<AbstractVerticle> clientVerticleSupplier = () -> new AbstractVerticle() {
-      @Override
-      public void start() {
-        ServiceFactory factory = clientSupplier.get();
-        HelloService hello = factory.create(HelloService.class);
-        for (int i = 0; i < CALLS_PER_VERTICLE; i++) {
-          hello.sayHello("call-" + i).onComplete(ar -> {
-            if (ar.succeeded()) {
-              responses.add(ar.result());
-            }
-            if (callsDone.incrementAndGet() == totalCalls) {
-              allDone.tryComplete();
-            }
-          });
-        }
-      }
-    };
-
-    vertx.deployVerticle(serverSupplier::get, new DeploymentOptions().setInstances(SERVER_INSTANCES))
-            .compose(serverDep ->
-                    vertx.deployVerticle(clientVerticleSupplier::get,
-                            new DeploymentOptions().setInstances(CLIENT_VERTICLES)))
-            .compose(clientDep -> allDone.future())
-            .onComplete(ctx.succeeding(v -> ctx.verify(() -> {
-              assertEquals(totalCalls, responses.size(),
-                      "expected every RPC to succeed");
-              for (String r : responses) {
-                assertTrue(r.startsWith("Hello, "), () -> "unexpected response: " + r);
+    Supplier<AbstractVerticle> clientVerticleSupplier =
+        () ->
+            new AbstractVerticle() {
+              @Override
+              public void start() {
+                ServiceFactory factory = clientSupplier.get();
+                HelloService hello = factory.create(HelloService.class);
+                for (int i = 0; i < CALLS_PER_VERTICLE; i++) {
+                  hello
+                      .sayHello("call-" + i)
+                      .onComplete(
+                          ar -> {
+                            if (ar.succeeded()) {
+                              responses.add(ar.result());
+                            }
+                            if (callsDone.incrementAndGet() == totalCalls) {
+                              allDone.tryComplete();
+                            }
+                          });
+                }
               }
-              assertTrue(impl.handlerThreads.size() >= 2,
-                      () -> "expected traffic on >= 2 server event loops, but only saw: "
-                              + impl.handlerThreads);
-              ctx.completeNow();
-            })));
+            };
+
+    vertx
+        .deployVerticle(serverSupplier::get, new DeploymentOptions().setInstances(SERVER_INSTANCES))
+        .compose(
+            serverDep ->
+                vertx.deployVerticle(
+                    clientVerticleSupplier::get,
+                    new DeploymentOptions().setInstances(CLIENT_VERTICLES)))
+        .compose(clientDep -> allDone.future())
+        .onComplete(
+            ctx.succeeding(
+                v ->
+                    ctx.verify(
+                        () -> {
+                          assertEquals(
+                              totalCalls, responses.size(), "expected every RPC to succeed");
+                          for (String r : responses) {
+                            assertTrue(r.startsWith("Hello, "), () -> "unexpected response: " + r);
+                          }
+                          assertTrue(
+                              impl.handlerThreads.size() >= 2,
+                              () ->
+                                  "expected traffic on >= 2 server event loops, but only saw: "
+                                      + impl.handlerThreads);
+                          ctx.completeNow();
+                        })));
   }
 
   public static final class ThreadCountingHello implements HelloService {

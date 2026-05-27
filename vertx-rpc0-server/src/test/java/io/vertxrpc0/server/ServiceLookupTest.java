@@ -17,8 +17,14 @@ public class ServiceLookupTest {
   @Test
   public void unknownServiceReturnsNull() {
     ServiceLookup lookup = new ServiceLookup(ImmutableMap.of());
-    InvokeSpec spec = new InvokeSpec(1, 0L, "nope", "doNothing",
-            MethodType.methodType(Future.class), ParameterArray.create());
+    InvokeSpec spec =
+        new InvokeSpec(
+            1,
+            0L,
+            "nope",
+            "doNothing",
+            MethodType.methodType(Future.class),
+            ParameterArray.create());
     assertNull(lookup.lookup(spec));
   }
 
@@ -26,9 +32,14 @@ public class ServiceLookupTest {
   public void knownServiceReturnsBoundMethodHandle() throws Throwable {
     Echo impl = new EchoImpl();
     ServiceLookup lookup = new ServiceLookup(ImmutableMap.of(Echo.class.getTypeName(), impl));
-    InvokeSpec spec = new InvokeSpec(1, 0L, Echo.class.getTypeName(), "echo",
+    InvokeSpec spec =
+        new InvokeSpec(
+            1,
+            0L,
+            Echo.class.getTypeName(),
+            "echo",
             MethodType.methodType(String.class, String.class),
-            ParameterArray.create(new Object[]{"hello"}));
+            ParameterArray.create(new Object[] {"hello"}));
 
     MethodHandle mh = lookup.lookup(spec);
     assertNotNull(mh);

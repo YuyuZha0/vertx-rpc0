@@ -26,13 +26,11 @@ public final class ServiceFactory implements Closeable {
   private final ProxyStubSupplier proxyStubSupplier;
 
   public <T> T create(@NonNull Class<? extends T> type) {
-    Preconditions.checkArgument(
-            registry.contains(type),
-            "`%s` is not registered!",
-            type
-    );
-    Object proxy = Proxy.newProxyInstance(type.getClassLoader(),
-            new Class[]{type},
+    Preconditions.checkArgument(registry.contains(type), "`%s` is not registered!", type);
+    Object proxy =
+        Proxy.newProxyInstance(
+            type.getClassLoader(),
+            new Class[] {type},
             new ProxyStubInvocationHandler((VertxInternal) vertx, proxyStubSupplier));
     return type.cast(proxy);
   }

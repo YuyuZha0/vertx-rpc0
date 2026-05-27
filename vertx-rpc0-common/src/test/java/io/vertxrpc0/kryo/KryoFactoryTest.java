@@ -46,7 +46,6 @@ import org.junit.jupiter.api.Test;
 
 public class KryoFactoryTest {
 
-
   static {
     Log.DEBUG();
   }
@@ -65,7 +64,6 @@ public class KryoFactoryTest {
     }
   }
 
-
   @Test
   public void verifyList() {
     List<Integer> origin = ImmutableList.of(1, 2, 3, 4, 5);
@@ -74,10 +72,8 @@ public class KryoFactoryTest {
     assertNotSame(origin, target);
     assertEquals(origin, target);
 
-    List<Object> origin1 = Arrays.asList(
-            "a", Math.PI, 'c', ImmutableMap.of("key", "value"),
-            List.of(0, 4, 5, 7, 8)
-    );
+    List<Object> origin1 =
+        Arrays.asList("a", Math.PI, 'c', ImmutableMap.of("key", "value"), List.of(0, 4, 5, 7, 8));
     List<Object> target1 = roundtrip(origin1);
     assertNotSame(origin1, target1);
     assertEquals(origin1, target1);
@@ -103,7 +99,6 @@ public class KryoFactoryTest {
     target = roundtrip(origin);
     assertEquals(origin, target);
 
-
     origin = new TreeSet<>(Arrays.asList(8, 1, 2, 4, 5));
     target = roundtrip(origin);
     assertEquals(origin, target);
@@ -127,63 +122,53 @@ public class KryoFactoryTest {
     assertNotSame(a, a1);
     assertArrayEquals(a, a1);
 
-    String[] b = new String[]{
-            UUID.randomUUID().toString(),
-            null,
-            "aaa",
-            "bbb",
-            "ccc"
-    };
+    String[] b = new String[] {UUID.randomUUID().toString(), null, "aaa", "bbb", "ccc"};
     String[] b1 = roundtrip(b);
     assertNotSame(b, b1);
     assertArrayEquals(b, b1);
 
-    Object[] c = new Object[]{
-            null,
-            1,
-            "hello",
-            ImmutableSortedSet.of(0, 1, 2, 3, 4),
-            LocalDateTime.now(),
-            new Date()
-    };
+    Object[] c =
+        new Object[] {
+          null, 1, "hello", ImmutableSortedSet.of(0, 1, 2, 3, 4), LocalDateTime.now(), new Date()
+        };
     Object[] c1 = roundtrip(c);
     assertNotSame(c, c1);
     assertArrayEquals(c, c1);
 
-    Object[] d = new Serializable[]{
-            Integer.MAX_VALUE,
-            Long.MAX_VALUE,
-            Double.MIN_VALUE,
-            UUID.randomUUID().toString(),
-            new URL("https://example.com/aaa?foo=bar"),
-            OffsetDateTime.MIN
-    };
+    Object[] d =
+        new Serializable[] {
+          Integer.MAX_VALUE,
+          Long.MAX_VALUE,
+          Double.MIN_VALUE,
+          UUID.randomUUID().toString(),
+          new URL("https://example.com/aaa?foo=bar"),
+          OffsetDateTime.MIN
+        };
     Object[] d1 = roundtrip(d);
     assertNotSame(d, d1);
     assertArrayEquals(d, d1);
     assertEquals(Object.class, d1.getClass().getComponentType());
   }
 
-
   @Test
   public void verifyMap() {
-    Map<String, Object> origin = Map.of(
+    Map<String, Object> origin =
+        Map.of(
             "key1", Arrays.asList(1, 3, 5, 7, 9),
             "key2", BigDecimal.valueOf(Math.PI),
             "key3", BigInteger.TEN,
-            "key4", UUID.randomUUID().toString()
-    );
+            "key4", UUID.randomUUID().toString());
     Map<String, Object> target = roundtrip(origin);
     assertNotSame(origin, target);
     assertEquals(origin, target);
     assertEquals(origin, kryo.copy(target));
 
-    Map<String, Object> origin1 = ImmutableSortedMap.of(
+    Map<String, Object> origin1 =
+        ImmutableSortedMap.of(
             "key1", Arrays.asList(1, 3, 5, 7, 9),
             "key2", BigDecimal.valueOf(Math.PI),
             "key3", BigInteger.TEN,
-            "key4", UUID.randomUUID().toString()
-    );
+            "key4", UUID.randomUUID().toString());
     Map<String, Object> target1 = roundtrip(origin1);
     assertNotSame(origin1, target1);
     assertEquals(origin1, target1);
@@ -192,14 +177,14 @@ public class KryoFactoryTest {
 
   @Test
   public void verifyInvokeSpec() {
-    InvokeSpec origin = new InvokeSpec(
+    InvokeSpec origin =
+        new InvokeSpec(
             1L,
             System.currentTimeMillis(),
             CharSequence.class.getTypeName(),
             "charAt",
             MethodType.methodType(char.class, int.class),
-            ParameterArray.create(new Object[]{13})
-    );
+            ParameterArray.create(new Object[] {13}));
     InvokeSpec target = roundtrip(origin);
 
     assertNotSame(origin, target);
@@ -209,7 +194,8 @@ public class KryoFactoryTest {
 
   @Test
   public void verifyInvokeResult() {
-    InvokeResult origin = new InvokeResult(1, System.currentTimeMillis(), ResultCode.OK, "", LocalDateTime.now());
+    InvokeResult origin =
+        new InvokeResult(1, System.currentTimeMillis(), ResultCode.OK, "", LocalDateTime.now());
     InvokeResult target = roundtrip(origin);
 
     assertNotSame(origin, target);
