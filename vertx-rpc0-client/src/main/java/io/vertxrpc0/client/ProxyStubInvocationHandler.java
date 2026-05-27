@@ -33,16 +33,11 @@ final class ProxyStubInvocationHandler implements InvocationHandler {
   private void checkMethodReturnType(Method method) {
     if (method.getReturnType() != Future.class) {
       throw new UnsupportedOperationException(
-              Strings.lenientFormat(
-                      "The return raw type of method \"%s\" must be : %s",
-                      method,
-                      Future.class
-              )
-      );
+          Strings.lenientFormat(
+              "The return raw type of method \"%s\" must be : %s", method, Future.class));
     }
   }
 
-  @SuppressWarnings("SuspiciousInvocationHandlerImplementation")
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) {
     if (method.getDeclaringClass() == Object.class) {
@@ -59,37 +54,33 @@ final class ProxyStubInvocationHandler implements InvocationHandler {
     }
     checkMethodReturnType(method);
     Class<?> actualReturnType = ReflectionUtil.getFutureResultType(method.getGenericReturnType());
-    InvokeSpec invokeSpec = buildInvokeSpec(
-            method,
-            actualReturnType,
-            args
-    );
+    InvokeSpec invokeSpec = buildInvokeSpec(method, actualReturnType, args);
     Promise<Object> promise = vertxInternal.promise();
     Future<ProxyStub> proxyStubFuture = proxyStubSupplier.get();
     // optimize for performance
     if (proxyStubFuture.succeeded()) {
-      proxyStubFuture.result()
-              .call(invokeSpec)
-              .onComplete(result ->
-                      handleResult(result, promise, actualReturnType));
+      proxyStubFuture
+          .result()
+          .call(invokeSpec)
+          .onComplete(result -> handleResult(result, promise, actualReturnType));
     } else {
-      proxyStubFuture.onComplete(stubResult -> {
-        if (stubResult.succeeded()) {
-          proxyStubFuture.result()
+      proxyStubFuture.onComplete(
+          stubResult -> {
+            if (stubResult.succeeded()) {
+              proxyStubFuture
+                  .result()
                   .call(invokeSpec)
-                  .onComplete(result ->
-                          handleResult(result, promise, actualReturnType));
-        } else {
-          promise.tryFail(stubResult.cause());
-        }
-      });
+                  .onComplete(result -> handleResult(result, promise, actualReturnType));
+            } else {
+              promise.tryFail(stubResult.cause());
+            }
+          });
     }
     return promise.future();
   }
 
-  private void handleResult(AsyncResult<InvokeResult> result,
-                            Promise<Object> promise,
-                            Class<?> actualReturnType) {
+  private void handleResult(
+      AsyncResult<InvokeResult> result, Promise<Object> promise, Class<?> actualReturnType) {
     if (result.succeeded()) {
       InvokeResult invokeResult = result.result();
       if (invokeResult.getCode() == ResultCode.OK) {
@@ -97,9 +88,10 @@ final class ProxyStubInvocationHandler implements InvocationHandler {
         if (o == null || actualReturnType.isInstance(o)) {
           promise.complete(o);
         } else {
-          promise.tryFail(Strings.lenientFormat("Mismatch result type, required: %s, but found: %s",
-                  actualReturnType,
-                  o.getClass()));
+          promise.tryFail(
+              Strings.lenientFormat(
+                  "Mismatch result type, required: %s, but found: %s",
+                  actualReturnType, o.getClass()));
         }
       } else {
         promise.tryFail(invokeResult.getErrorMessage());
@@ -109,18 +101,14 @@ final class ProxyStubInvocationHandler implements InvocationHandler {
     }
   }
 
-
-  private InvokeSpec buildInvokeSpec(Method method,
-                                     Class<?> actualReturnType,
-                                     Object[] args) {
+  private InvokeSpec buildInvokeSpec(Method method, Class<?> actualReturnType, Object[] args) {
     ParameterArray parameters = ParameterArray.create(args);
     return new InvokeSpec(
-            ID_GENERATOR.incrementAndGet(),
-            System.currentTimeMillis(),
-            method.getDeclaringClass().getTypeName(),
-            method.getName(),
-            MethodType.methodType(actualReturnType, method.getParameterTypes()),
-            parameters
-    );
+        ID_GENERATOR.incrementAndGet(),
+        System.currentTimeMillis(),
+        method.getDeclaringClass().getTypeName(),
+        method.getName(),
+        MethodType.methodType(actualReturnType, method.getParameterTypes()),
+        parameters);
   }
 }

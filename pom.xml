@@ -14,7 +14,7 @@
     </modules>
 
     <name>vertx-rpc0</name>
-    <url>https://github.com/vertxrpc0/vertx-rpc0</url>
+    <url>https://github.com/YuyuZha0/vertx-rpc0</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
