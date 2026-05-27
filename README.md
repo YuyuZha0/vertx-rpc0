@@ -182,6 +182,27 @@ builder.registerType(User.class);
 
 A custom `KryoRegistry` can be supplied instead of `registerTypes` / `registerType`, but the two approaches are mutually exclusive on a single builder.
 
+## Custom comparators
+
+`Comparator` instances often appear inside payloads — for example, sorted collections. The framework's `ComparatorSerializer` recognizes a closed set of comparators by structure (not by class name or reflected fields), so the wire format is independent of JDK or Guava internals.
+
+Wire-safe set:
+
+- **JDK singletons** — `Comparator.naturalOrder()`, `Comparator.reverseOrder()`.
+- **Guava singletons** — `Ordering.natural()`, `Ordering.allEqual()`, `Ordering.arbitrary()`, `Ordering.usingToString()`.
+- **The chainable `io.vertxrpc0.Comparators<T>` family** — for anything that needs composition (`nullsFirst`, `nullsLast`, `reverse`, `compound`). Start a chain from one of the five static factories and chain instance methods:
+
+  ```java
+  import io.vertxrpc0.Comparators;
+
+  Comparator<User> a = Comparators.<User>natural().reverse().nullsFirst();
+  Comparator<User> b = Comparators.<User>natural().compound(Comparators.usingToString());
+  ```
+
+  `Comparators` is a sealed abstract class — only the five leaf factories and the four chain operators are wire-representable. The chain methods only accept `Comparators<? super T>`, so every reachable composition is statically guaranteed to round-trip.
+
+Anything else — lambdas from `Comparator.comparing*` or `Comparator.thenComparing`, anonymous classes, custom `Comparator` implementations — is **rejected at serialize time** with a `KryoException`. If you really need an arbitrary `Serializable` comparator on the wire, construct `ComparatorSerializer(true)` to opt into the JDK-serialization fallback. **That path is a known deserialization-attack surface** and should only be enabled when the channel itself is trusted.
+
 ## SSL/TLS
 
 Vert.x's native TLS support is used unchanged. Pass standard `NetServerOptions` / `NetClientOptions` with `setSsl(true)` and the desired `KeyCertOptions` / `TrustOptions`. See the Vert.x documentation: https://vertx.io/docs/vertx-core/java/#ssl

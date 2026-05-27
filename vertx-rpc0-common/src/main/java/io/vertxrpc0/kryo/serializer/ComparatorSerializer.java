@@ -9,6 +9,7 @@ import com.esotericsoftware.kryo.util.ObjectIntMap;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.minlog.Log;
 import com.google.common.collect.Ordering;
+import io.vertxrpc0.Comparators;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +26,8 @@ import java.util.Comparator;
 public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?>> {
 
   private static final ObjectIntMap<Class<?>> SUPPORTED = new ObjectIntMap<>();
+  /** Dispatch tag for {@link Comparators} self-serialization. Local to this serializer's tag space. */
+  private static final int COMPARATORS_DELEGATE = 99;
   private static final int USING_JDK = 100;
 
   static {
@@ -64,6 +67,9 @@ public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?
     int id = SUPPORTED.get(comparator.getClass(), -1);
     if (id > 0) {
       output.writeInt(id + 1, true);
+    } else if (comparator instanceof Comparators<?> ours) {
+      output.writeInt(COMPARATORS_DELEGATE + 1, true);
+      ours.writeTo(kryo, output);
     } else if (isSafeUsingJdkSerialization(comparator)) { // may cause vulnerability: baeldung.com/java-deserialization-vulnerabilities
       output.writeInt(USING_JDK + 1, true);
       try {
@@ -79,7 +85,10 @@ public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?
         throw new KryoException("Error during Java serialization.", ex);
       }
     } else {
-      output.writeInt(1, true);
+      throw new KryoException("Unsupported comparator: " + comparator.getClass().getName()
+              + ". Use io.vertxrpc0.Comparators.* for chainable wire-safe comparators, "
+              + "or construct ComparatorSerializer(trustUnsafe=true) to opt into JDK serialization "
+              + "for arbitrary Serializable comparators.");
     }
   }
 
@@ -88,6 +97,8 @@ public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?
   public Comparator<?> read(Kryo kryo, Input input, Class<? extends Comparator<?>> type) {
     int id = input.readInt(true) - 1;
     switch (id) {
+      case -1:
+        return null;
       case 1:
         return Comparator.naturalOrder();
       case 2:
@@ -100,6 +111,8 @@ public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?
         return Ordering.arbitrary();
       case 6:
         return Ordering.usingToString();
+      case COMPARATORS_DELEGATE:
+        return Comparators.readFrom(kryo, input);
       case USING_JDK: {
         if (!trustUnsafe) {
           throw new KryoException("Deserialization of unsafe comparator is prohibited!");
@@ -117,7 +130,7 @@ public final class ComparatorSerializer extends ImmutableSerializer<Comparator<?
         }
       }
       default:
-        return null;
+        throw new KryoException("Unknown comparator tag: " + id);
     }
   }
 
