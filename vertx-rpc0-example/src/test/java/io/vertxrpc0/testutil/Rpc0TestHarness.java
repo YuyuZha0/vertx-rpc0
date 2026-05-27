@@ -1,6 +1,7 @@
 package io.vertxrpc0.testutil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServerOptions;
@@ -24,9 +25,6 @@ import io.vertxrpc0.service.impl.VoidServiceImpl;
 import io.vertxrpc0.util.ObjectMapperSupplier;
 
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 public final class Rpc0TestHarness {
 
@@ -47,9 +45,12 @@ public final class Rpc0TestHarness {
    * Bootstraps the server + client factory on the supplied {@link Vertx}.
    * The caller owns the Vertx lifecycle (typically provided by
    * {@code @ExtendWith(VertxExtension.class)}); {@link #close()} only undeploys
-   * the server verticle and closes the factory.
+   * the server verticle.
+   *
+   * <p>Returns a Future that completes when the verticle is listening on its
+   * ephemeral port and the client factory is built — no test-thread blocking.
    */
-  public static Rpc0TestHarness start(Vertx vertx, boolean ssl) throws Exception {
+  public static Future<Rpc0TestHarness> start(Vertx vertx, boolean ssl) {
     ObjectMapper objectMapper = new ObjectMapperSupplier().get();
     SelfSignedCertificate certificate = ssl ? SelfSignedCertificate.create() : null;
 
@@ -73,46 +74,30 @@ public final class Rpc0TestHarness {
             .registerTypes("io.vertxrpc0.model", false)
             .build();
 
-    CountDownLatch latch = new CountDownLatch(1);
-    AtomicReference<String> deploymentRef = new AtomicReference<>();
-    AtomicReference<Throwable> error = new AtomicReference<>();
-    vertx.deployVerticle(server).onComplete(ar -> {
-      if (ar.succeeded()) {
-        deploymentRef.set(ar.result());
-      } else {
-        error.set(ar.cause());
+    return vertx.deployVerticle(server).map(deploymentId -> {
+      int actualPort = readActualPort(server);
+
+      NetClientOptions clientOptions = new NetClientOptions();
+      if (ssl) {
+        clientOptions
+                .setSsl(true)
+                .setHostnameVerificationAlgorithm("")
+                .setKeyCertOptions(certificate.keyCertOptions())
+                .setTrustOptions(certificate.trustOptions());
       }
-      latch.countDown();
+      ServiceFactory factory = new ServiceFactoryBuilder(vertx, "127.0.0.1", actualPort,
+              clientOptions, Duration.ofSeconds(3), Vertx.class.getClassLoader())
+              .registerService(DoubleService.class)
+              .registerService(StringService.class)
+              .registerService(TimeService.class)
+              .registerService(VoidService.class)
+              .registerService(BeanService.class)
+              .registerService(HelloService.class)
+              .registerTypes("io.vertxrpc0.model", false)
+              .build();
+
+      return new Rpc0TestHarness(vertx, factory, actualPort, deploymentId);
     });
-    if (!latch.await(10, TimeUnit.SECONDS)) {
-      throw new IllegalStateException("server start timed out");
-    }
-    if (error.get() != null) {
-      throw new RuntimeException(error.get());
-    }
-
-    int actualPort = readActualPort(server);
-
-    NetClientOptions clientOptions = new NetClientOptions();
-    if (ssl) {
-      clientOptions
-              .setSsl(true)
-              .setHostnameVerificationAlgorithm("")
-              .setKeyCertOptions(certificate.keyCertOptions())
-              .setTrustOptions(certificate.trustOptions());
-    }
-    ServiceFactory factory = new ServiceFactoryBuilder(vertx, "127.0.0.1", actualPort,
-            clientOptions, Duration.ofSeconds(3), Vertx.class.getClassLoader())
-            .registerService(DoubleService.class)
-            .registerService(StringService.class)
-            .registerService(TimeService.class)
-            .registerService(VoidService.class)
-            .registerService(BeanService.class)
-            .registerService(HelloService.class)
-            .registerTypes("io.vertxrpc0.model", false)
-            .build();
-
-    return new Rpc0TestHarness(vertx, factory, actualPort, deploymentRef.get());
   }
 
   private static int readActualPort(Rpc0Server server) {
@@ -143,11 +128,11 @@ public final class Rpc0TestHarness {
   }
 
   /**
-   * Returns a {@link io.vertx.core.Future} that completes once the server
-   * verticle is undeployed. Does <strong>not</strong> close the {@link Vertx}
-   * — that's the caller's responsibility.
+   * Returns a {@link Future} that completes once the server verticle is
+   * undeployed. Does <strong>not</strong> close the {@link Vertx} — that's
+   * the caller's responsibility.
    */
-  public io.vertx.core.Future<Void> close() {
+  public Future<Void> close() {
     return vertx.undeploy(deploymentId);
   }
 }

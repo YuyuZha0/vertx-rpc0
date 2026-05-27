@@ -1,21 +1,25 @@
 package io.vertxrpc0.client;
 
 import com.google.common.collect.ImmutableSet;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,39 +61,48 @@ public class ServiceFactoryTest {
   }
 
   @Test
-  public void getOrCreateIsThreadSafe(Vertx vertx) throws Exception {
+  public void getOrCreateIsThreadSafe(Vertx vertx, VertxTestContext ctx) {
     ServiceFactory factory = new ServiceFactory(ImmutableSet.of(ServiceA.class), vertx, supplier);
     int threads = 32;
     ExecutorService pool = Executors.newFixedThreadPool(threads);
+    // CountDownLatch coordinates a simultaneous start across all workers; it's
+    // a synchronization primitive between worker threads, NOT a block on the
+    // test thread. The test thread returns immediately and waits via
+    // VertxTestContext + CompositeFuture.all.
     CountDownLatch start = new CountDownLatch(1);
-    java.util.List<java.util.concurrent.Future<ServiceA>> futures = new java.util.ArrayList<>();
-    try {
-      for (int i = 0; i < threads; i++) {
-        futures.add(pool.submit(() -> {
+    List<Future<ServiceA>> results = new ArrayList<>();
+    for (int i = 0; i < threads; i++) {
+      Promise<ServiceA> p = Promise.promise();
+      results.add(p.future());
+      pool.submit(() -> {
+        try {
           start.await();
-          return factory.getOrCreate(ServiceA.class);
-        }));
-      }
-      start.countDown();
-      pool.shutdown();
-      ServiceA first = futures.get(0).get(5, TimeUnit.SECONDS);
-      for (java.util.concurrent.Future<ServiceA> f : futures) {
-        assertSame(first, f.get(5, TimeUnit.SECONDS),
+          p.tryComplete(factory.getOrCreate(ServiceA.class));
+        } catch (Throwable t) {
+          p.tryFail(t);
+        }
+      });
+    }
+    start.countDown();
+    pool.shutdown();
+
+    CompositeFuture.all(new ArrayList<>(results)).onComplete(ctx.succeeding(cf -> ctx.verify(() -> {
+      ServiceA first = cf.resultAt(0);
+      for (int i = 1; i < threads; i++) {
+        assertSame(first, cf.resultAt(i),
                 "all threads should see the same cached proxy instance");
       }
-      assertTrue(pool.awaitTermination(5, TimeUnit.SECONDS));
-    } finally {
-      pool.shutdownNow();
-    }
+      ctx.completeNow();
+    })));
   }
 
   @Test
-  public void closeClearsCacheAndPropagatesToSupplier(Vertx vertx) throws Exception {
+  public void closeClearsCacheAndPropagatesToSupplier(Vertx vertx) {
     Set<Class<?>> registry = new HashSet<>();
     registry.add(ServiceA.class);
     ServiceFactory factory = new ServiceFactory(ImmutableSet.copyOf(registry), vertx, supplier);
     factory.getOrCreate(ServiceA.class);
-    io.vertx.core.Promise<Void> p = io.vertx.core.Promise.promise();
+    Promise<Void> p = Promise.promise();
     factory.close(p);
     Mockito.verify(supplier).close(p);
   }

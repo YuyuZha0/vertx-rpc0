@@ -36,9 +36,12 @@ public class AppTest {
   private ServiceFactory factory;
 
   @BeforeEach
-  public void setUp(Vertx vertx) throws Exception {
-    harness = Rpc0TestHarness.start(vertx, true);
-    factory = harness.factory();
+  public void setUp(Vertx vertx, VertxTestContext ctx) {
+    Rpc0TestHarness.start(vertx, true).onComplete(ctx.succeeding(h -> {
+      harness = h;
+      factory = h.factory();
+      ctx.completeNow();
+    }));
   }
 
   @AfterEach
