@@ -53,6 +53,13 @@ public class Rpc0ServerBuilderTest {
   }
 
   @Test
+  public void setMaxMsgLenRejectsNonPositive(Vertx vertx) {
+    Rpc0ServerBuilder builder = new Rpc0ServerBuilder(vertx, new NetServerOptions());
+    assertThrows(IllegalArgumentException.class, () -> builder.setMaxMsgLen(0));
+    assertThrows(IllegalArgumentException.class, () -> builder.setMaxMsgLen(-1));
+  }
+
+  @Test
   public void buildSupplierProducesFreshInstancesPerCall(Vertx vertx) {
     Rpc0ServerBuilder builder =
         new Rpc0ServerBuilder(vertx, new NetServerOptions())

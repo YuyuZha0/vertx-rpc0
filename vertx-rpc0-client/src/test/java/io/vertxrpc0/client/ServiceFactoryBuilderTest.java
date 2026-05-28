@@ -83,6 +83,13 @@ public class ServiceFactoryBuilderTest {
   }
 
   @Test
+  public void setMaxMsgLenRejectsNonPositive(Vertx vertx) {
+    ServiceFactoryBuilder builder = new ServiceFactoryBuilder(vertx, "localhost", 7777);
+    assertThrows(IllegalArgumentException.class, () -> builder.setMaxMsgLen(0));
+    assertThrows(IllegalArgumentException.class, () -> builder.setMaxMsgLen(-1));
+  }
+
+  @Test
   public void buildSupplierProducesFreshInstancesPerCall(Vertx vertx) {
     Supplier<ServiceFactory> supplier =
         new ServiceFactoryBuilder(vertx, "localhost", 7777)

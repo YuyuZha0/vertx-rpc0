@@ -231,6 +231,37 @@ vertx.deployVerticle(() -> new MyClientVerticle(factorySupplier),
 calling thread's context eagerly; reach for `buildSupplier()` when you
 need multiple instances.
 
+## Thread-safety
+
+### Client
+
+A service proxy (and the `ServiceFactory` behind it) is **safe to call
+concurrently from multiple threads**. Each in-flight call is tracked by a
+globally unique request id in a concurrent map, and every request is
+completed *exactly once* — whichever of response / timeout / write-failure /
+connection-close arrives first wins, and the rest are no-ops.
+
+That said, the proxy invocation runs **inline on the calling thread** — there
+is no hop onto a Vert.x context. The `Future` you get back completes on the
+context that was current *when you made the call*. So the cleanest model, and
+the one the multi-Verticle guidance above assumes, is **one `ServiceFactory`
+per Verticle, with calls originating from that Verticle's event loop** — then
+your `onSuccess` / `onFailure` handlers run back on the same event loop.
+Calling a proxy from a non-Vert.x thread is permitted, but you lose that
+"callbacks run on my event loop" guarantee: the handlers will instead run on
+whichever internal thread (the connection's event loop, or the timeout timer
+thread) happens to complete the request.
+
+### Server
+
+Service implementation methods are invoked on the **connection's event loop**.
+All requests on a single connection are therefore handled by one thread, so
+per-connection state needs no synchronization. But the framework does **not**
+synchronize across connections or across server instances — any state shared
+between them (a cache, a counter, a database handle) is your responsibility to
+make thread-safe. And, as always on an event loop, **don't block**: return a
+`Future` and keep the method body non-blocking.
+
 ## Supported parameter and return types
 
 ### Value types
@@ -325,6 +356,31 @@ Anything else — lambdas from `Comparator.comparing*` or `Comparator.thenCompar
 `Serializable` comparator on the wire, construct `ComparatorSerializer(true)` to opt into the JDK-serialization
 fallback. **That path is a known deserialization-attack surface** and should only be enabled when the channel itself is
 trusted.
+
+## Message size limit
+
+Every inbound frame carries a declared length, and the framework rejects any
+frame whose length exceeds a configurable maximum **before** buffering its
+body — bounding how much memory a single connection can be made to allocate
+from an oversized (or malicious) length prefix. The default is 10 MiB.
+
+Tune it per side on the builder:
+
+```java
+new Rpc0ServerBuilder(vertx, netServerOptions)
+        .addBinding(HelloService.class, new HelloServiceImpl())
+        .setMaxMsgLen(1 << 20) // cap inbound requests at 1 MiB
+        .build();
+
+new ServiceFactoryBuilder(vertx, "127.0.0.1", 9549)
+        .registerService(HelloService.class)
+        .setMaxMsgLen(4 << 20) // cap inbound responses at 4 MiB
+        .build();
+```
+
+The cap is per connection. Under many concurrent connections the figure that
+bounds total exposure is `connections × maxMsgLen`, so size it against your
+largest legitimate payload, not your heap.
 
 ## SSL/TLS
 

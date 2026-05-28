@@ -15,7 +15,7 @@ import lombok.NonNull;
  */
 public final class MarkedLenMessageHandler implements Handler<Buffer> {
 
-  private static final int DEFAULT_MAX_MSG_LEN = 10 << 20; // 10MB
+  public static final int DEFAULT_MAX_MSG_LEN = 10 << 20; // 10MB
 
   private final ParserHandler parserHandler;
   private final RecordParser recordParser;

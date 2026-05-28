@@ -26,17 +26,20 @@ public final class Rpc0Server extends AbstractVerticle {
   private final MessageTransport messageTransport;
   private final NetServerOptions netServerOptions;
   private final long keepAliveMills;
+  private final int maxMsgLen;
   private NetServer netServer;
 
   Rpc0Server(
       @NonNull ServiceLookup serviceLookup,
       @NonNull MessageTransport messageTransport,
       @NonNull NetServerOptions netServerOptions,
-      @NonNull Duration keepAliveDuration) {
+      @NonNull Duration keepAliveDuration,
+      int maxMsgLen) {
     this.serviceLookup = serviceLookup;
     this.messageTransport = messageTransport;
     this.netServerOptions = netServerOptions;
     this.keepAliveMills = keepAliveDuration.toMillis();
+    this.maxMsgLen = maxMsgLen;
   }
 
   @Override
@@ -96,7 +99,8 @@ public final class Rpc0Server extends AbstractVerticle {
   }
 
   private void handleConnect(NetSocket netSocket) {
-    ServiceInvoker invoker = new ServiceInvoker(netSocket, messageTransport, serviceLookup);
+    ServiceInvoker invoker =
+        new ServiceInvoker(netSocket, messageTransport, serviceLookup, maxMsgLen);
     // The add runs synchronously here — connectHandler is dispatched on the
     // verticle's context.
     //

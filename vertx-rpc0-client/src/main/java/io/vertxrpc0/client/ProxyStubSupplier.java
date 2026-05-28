@@ -1,5 +1,6 @@
 package io.vertxrpc0.client;
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timer;
@@ -9,6 +10,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
+import io.vertxrpc0.transport.MarkedLenMessageHandler;
 import io.vertxrpc0.transport.MessageTransport;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +51,7 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
   private final Duration timeout;
   private final String host;
   private final int port;
+  private final int maxMsgLen;
   private final long initialBackoffMillis;
   private final long maxBackoffMillis;
 
@@ -56,11 +59,11 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
   private int consecutiveFailures = 0;
 
   ProxyStubSupplier(
-      @NonNull ContextInternal context,
-      @NonNull NetClient netClient,
-      @NonNull MessageTransport messageTransport,
-      @NonNull Duration timeout,
-      @NonNull String host,
+      ContextInternal context,
+      NetClient netClient,
+      MessageTransport messageTransport,
+      Duration timeout,
+      String host,
       int port) {
     this(
         context,
@@ -69,8 +72,50 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
         timeout,
         host,
         port,
+        MarkedLenMessageHandler.DEFAULT_MAX_MSG_LEN,
         DEFAULT_INITIAL_BACKOFF,
         DEFAULT_MAX_BACKOFF);
+  }
+
+  ProxyStubSupplier(
+      ContextInternal context,
+      NetClient netClient,
+      MessageTransport messageTransport,
+      Duration timeout,
+      String host,
+      int port,
+      int maxMsgLen) {
+    this(
+        context,
+        netClient,
+        messageTransport,
+        timeout,
+        host,
+        port,
+        maxMsgLen,
+        DEFAULT_INITIAL_BACKOFF,
+        DEFAULT_MAX_BACKOFF);
+  }
+
+  ProxyStubSupplier(
+      ContextInternal context,
+      NetClient netClient,
+      MessageTransport messageTransport,
+      Duration timeout,
+      String host,
+      int port,
+      Duration initialBackoff,
+      Duration maxBackoff) {
+    this(
+        context,
+        netClient,
+        messageTransport,
+        timeout,
+        host,
+        port,
+        MarkedLenMessageHandler.DEFAULT_MAX_MSG_LEN,
+        initialBackoff,
+        maxBackoff);
   }
 
   ProxyStubSupplier(
@@ -80,21 +125,24 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
       @NonNull Duration timeout,
       @NonNull String host,
       int port,
+      int maxMsgLen,
       @NonNull Duration initialBackoff,
       @NonNull Duration maxBackoff) {
-    if (initialBackoff.isZero() || initialBackoff.isNegative()) {
-      throw new IllegalArgumentException("initialBackoff must be positive: " + initialBackoff);
-    }
-    if (maxBackoff.compareTo(initialBackoff) < 0) {
-      throw new IllegalArgumentException(
-          "maxBackoff (" + maxBackoff + ") must be >= initialBackoff (" + initialBackoff + ")");
-    }
+    Preconditions.checkArgument(maxMsgLen > 0, "maxMsgLen must be positive: %s", maxMsgLen);
+    Preconditions.checkArgument(
+        initialBackoff.isPositive(), "initialBackoff must be positive: %s", initialBackoff);
+    Preconditions.checkArgument(
+        maxBackoff.compareTo(initialBackoff) >= 0,
+        "maxBackoff must be >= initialBackoff: %s >= %s",
+        maxBackoff,
+        initialBackoff);
     this.context = context;
     this.netClient = netClient;
     this.messageTransport = messageTransport;
     this.timeout = timeout;
     this.host = host;
     this.port = port;
+    this.maxMsgLen = maxMsgLen;
     this.initialBackoffMillis = initialBackoff.toMillis();
     this.maxBackoffMillis = maxBackoff.toMillis();
   }
@@ -133,7 +181,8 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
               if (result.succeeded()) {
                 NetSocket socket = result.result();
                 try {
-                  ProxyStub stub = new ProxyStub(socket, messageTransport, timer, timeout);
+                  ProxyStub stub =
+                      new ProxyStub(socket, messageTransport, timer, timeout, maxMsgLen);
                   stub.registerHandlers(() -> onConnectionDispose(newFuture));
                   consecutiveFailures = 0;
                   log.info("Open connection to [{}] successfully", socket.remoteAddress());
@@ -162,13 +211,7 @@ final class ProxyStubSupplier implements Supplier<Future<ProxyStub>>, Closeable 
     // Hold the failed future in cache for the backoff window: concurrent callers fail
     // fast on the cached failure instead of opening parallel connects. The clear runs on
     // the supplier's event loop, same as every other futureRef mutation.
-    context.setTimer(
-        backoff,
-        id -> {
-          if (isActive()) {
-            futureRef.compareAndSet(newFuture, null);
-          }
-        });
+    context.setTimer(backoff, id -> onConnectionDispose(newFuture));
     promise.tryFail(cause);
   }
 

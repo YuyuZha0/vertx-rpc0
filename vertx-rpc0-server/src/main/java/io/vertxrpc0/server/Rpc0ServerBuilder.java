@@ -12,6 +12,7 @@ import io.vertxrpc0.conf.ConstructingProcess;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.kryo.KryoRegistry;
 import io.vertxrpc0.transport.KryoMessageTransport;
+import io.vertxrpc0.transport.MarkedLenMessageHandler;
 import io.vertxrpc0.transport.MessageTransport;
 import java.time.Duration;
 import java.util.Map;
@@ -31,6 +32,7 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
   private final Vertx vertx;
   private final NetServerOptions netServerOptions;
   private Duration keepAliveDuration = Duration.ofMinutes(2);
+  private int maxMsgLen = MarkedLenMessageHandler.DEFAULT_MAX_MSG_LEN;
 
   public Rpc0ServerBuilder(
       @NonNull Vertx vertx,
@@ -78,16 +80,28 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
     KryoRegistry kryoRegistry = getKryoRegistry();
     NetServerOptions opts = netServerOptions;
     Duration keepAlive = keepAliveDuration;
+    int maxLen = maxMsgLen;
 
     return () -> {
       ServiceLookup lookup = new ServiceLookup(services);
       MessageTransport transport = new KryoMessageTransport(new KryoFactory(cl, kryoRegistry));
-      return new Rpc0Server(lookup, transport, opts, keepAlive);
+      return new Rpc0Server(lookup, transport, opts, keepAlive, maxLen);
     };
   }
 
   public Rpc0ServerBuilder setKeepAliveDuration(@NonNull Duration keepAliveDuration) {
     this.keepAliveDuration = keepAliveDuration;
+    return this;
+  }
+
+  /**
+   * Sets the maximum length, in bytes, of a single inbound message frame. Frames whose declared
+   * length exceeds this are rejected before their body is buffered, bounding per-connection memory.
+   * Defaults to {@link MarkedLenMessageHandler#DEFAULT_MAX_MSG_LEN}.
+   */
+  public Rpc0ServerBuilder setMaxMsgLen(int maxMsgLen) {
+    Preconditions.checkArgument(maxMsgLen > 0, "maxMsgLen must be positive: %s", maxMsgLen);
+    this.maxMsgLen = maxMsgLen;
     return this;
   }
 

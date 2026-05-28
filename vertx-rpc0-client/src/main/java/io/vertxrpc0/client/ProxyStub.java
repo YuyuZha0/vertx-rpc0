@@ -41,6 +41,7 @@ final class ProxyStub implements ParserHandler, Closeable {
   private final MessageTransport messageTransport;
   private final Timer timer;
   private final Duration timeout;
+  private final int maxMsgLen;
 
   /**
    * The {@link ByteBufAllocator} from the underlying channel — the only spot that needs the
@@ -55,7 +56,7 @@ final class ProxyStub implements ParserHandler, Closeable {
   }
 
   void registerHandlers(Runnable dispose) {
-    socket.handler(new MarkedLenMessageHandler(this));
+    socket.handler(new MarkedLenMessageHandler(this, maxMsgLen));
     socket.closeHandler(
         v -> {
           cleanup(new VertxException("Connection closed!", true));

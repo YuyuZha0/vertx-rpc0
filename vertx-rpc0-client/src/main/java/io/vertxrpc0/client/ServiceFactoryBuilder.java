@@ -10,6 +10,7 @@ import io.vertxrpc0.conf.ConstructingProcess;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.kryo.KryoRegistry;
 import io.vertxrpc0.transport.KryoMessageTransport;
+import io.vertxrpc0.transport.MarkedLenMessageHandler;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,6 +32,7 @@ public final class ServiceFactoryBuilder extends AbstractConfigurator<ServiceFac
   private final Duration timeout;
   private final String host;
   private final int port;
+  private int maxMsgLen = MarkedLenMessageHandler.DEFAULT_MAX_MSG_LEN;
 
   public ServiceFactoryBuilder(
       @NonNull Vertx vertx,
@@ -66,6 +68,17 @@ public final class ServiceFactoryBuilder extends AbstractConfigurator<ServiceFac
   }
 
   /**
+   * Sets the maximum length, in bytes, of a single inbound message frame (i.e. an RPC response).
+   * Frames whose declared length exceeds this are rejected before their body is buffered, bounding
+   * per-connection memory. Defaults to {@link MarkedLenMessageHandler#DEFAULT_MAX_MSG_LEN}.
+   */
+  public ServiceFactoryBuilder setMaxMsgLen(int maxMsgLen) {
+    Preconditions.checkArgument(maxMsgLen > 0, "maxMsgLen must be positive: %s", maxMsgLen);
+    this.maxMsgLen = maxMsgLen;
+    return this;
+  }
+
+  /**
    * Builds a single {@link ServiceFactory}. The Vert.x context is captured <strong>at the time this
    * method is called</strong>, so calling {@code build()} from outside a Verticle (e.g. main / test
    * thread) binds the factory to the surrounding root context. For multi-Verticle deployments where
@@ -83,7 +96,8 @@ public final class ServiceFactoryBuilder extends AbstractConfigurator<ServiceFac
             new KryoMessageTransport(new KryoFactory(getClassLoader(), getKryoRegistry())),
             timeout,
             host,
-            port));
+            port,
+            maxMsgLen));
   }
 
   /**
@@ -110,6 +124,7 @@ public final class ServiceFactoryBuilder extends AbstractConfigurator<ServiceFac
     String h = host;
     int p = port;
     Duration t = timeout;
+    int maxLen = maxMsgLen;
     Vertx vx = vertx;
     return () ->
         new ServiceFactory(
@@ -121,6 +136,7 @@ public final class ServiceFactoryBuilder extends AbstractConfigurator<ServiceFac
                 new KryoMessageTransport(new KryoFactory(cl, kryoRegistry)),
                 t,
                 h,
-                p));
+                p,
+                maxLen));
   }
 }

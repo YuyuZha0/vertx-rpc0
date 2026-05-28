@@ -8,7 +8,6 @@ import gnu.trove.set.hash.TLongHashSet;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
@@ -48,6 +47,7 @@ final class ServiceInvoker implements ParserHandler {
 
   private final MessageTransport messageTransport;
   private final ServiceLookup serviceLookup;
+  private final int maxMsgLen;
 
   private static String buildErrorMessage(Throwable cause) {
     return Strings.lenientFormat(
@@ -63,7 +63,7 @@ final class ServiceInvoker implements ParserHandler {
   }
 
   void registerHandlers(Runnable dispose) {
-    socket.handler(new MarkedLenMessageHandler(this));
+    socket.handler(new MarkedLenMessageHandler(this, maxMsgLen));
     SocketAddress socketAddress = socket.remoteAddress();
     socket.closeHandler(
         v -> {
@@ -89,15 +89,14 @@ final class ServiceInvoker implements ParserHandler {
     }
     long time = System.currentTimeMillis();
     String msg = buildErrorMessage(cause);
-    @SuppressWarnings("rawtypes")
-    List<Future> futures = new ArrayList<>();
+    List<Future<Void>> futures = new ArrayList<>();
     for (long requestId : acceptedRequestIdSet.toArray()) {
       InvokeResult result = new InvokeResult(requestId, time, resultCode, msg, null);
       Promise<Void> promise = Promise.promise();
       writeResult(result, promise);
       futures.add(promise.future());
     }
-    CompositeFuture.join(futures).onComplete(ar -> socket.close());
+    Future.join(futures).onComplete(ar -> socket.close());
   }
 
   // This method associated with the same event-loop, so it's thread-safe
