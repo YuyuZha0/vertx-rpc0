@@ -6,6 +6,7 @@ import com.google.common.reflect.ClassPath;
 import io.vertxrpc0.annotation.TrustedType;
 import io.vertxrpc0.kryo.KryoRegistry;
 import io.vertxrpc0.kryo.TrustedTypeKryoRegistry;
+import io.vertxrpc0.transport.MarkedLenMessageHandler;
 import java.io.IOException;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -28,6 +29,9 @@ public abstract class AbstractConfigurator<T extends AbstractConfigurator<T>> {
   private final IntMap<Class<?>> typeRegistry = new IntMap<>();
 
   private KryoRegistry kryoRegistry;
+
+  @Getter(AccessLevel.PROTECTED)
+  private int maxMsgLen = MarkedLenMessageHandler.DEFAULT_MAX_MSG_LEN;
 
   protected AbstractConfigurator(@NonNull ClassLoader classLoader) {
     this.classLoader = classLoader;
@@ -82,7 +86,6 @@ public abstract class AbstractConfigurator<T extends AbstractConfigurator<T>> {
     return (T) this;
   }
 
-  @SuppressWarnings("UnstableApiUsage")
   protected void visitPackage(
       @NonNull String packageName,
       boolean recursive,
@@ -116,6 +119,17 @@ public abstract class AbstractConfigurator<T extends AbstractConfigurator<T>> {
       typeRegistry.clear();
     }
     this.kryoRegistry = kryoRegistry;
+    return self();
+  }
+
+  /**
+   * Sets the maximum length, in bytes, of a single inbound message frame (i.e. an RPC response).
+   * Frames whose declared length exceeds this are rejected before their body is buffered, bounding
+   * per-connection memory. Defaults to {@link MarkedLenMessageHandler#DEFAULT_MAX_MSG_LEN}.
+   */
+  public final T setMaxMsgLen(int maxMsgLen) {
+    Preconditions.checkArgument(maxMsgLen > 0, "maxMsgLen must be positive: %s", maxMsgLen);
+    this.maxMsgLen = maxMsgLen;
     return self();
   }
 }

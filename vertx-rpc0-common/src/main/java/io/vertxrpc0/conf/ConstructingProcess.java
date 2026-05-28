@@ -8,10 +8,14 @@ import java.util.function.Supplier;
  */
 public interface ConstructingProcess<T> extends Supplier<T> {
 
-  T build();
+  default T build() {
+    return buildSupplier().get();
+  }
 
   @Override
   default T get() {
     return build();
   }
+
+  Supplier<? extends T> buildSupplier();
 }

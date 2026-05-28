@@ -12,7 +12,6 @@ import io.vertxrpc0.conf.ConstructingProcess;
 import io.vertxrpc0.kryo.KryoFactory;
 import io.vertxrpc0.kryo.KryoRegistry;
 import io.vertxrpc0.transport.KryoMessageTransport;
-import io.vertxrpc0.transport.MarkedLenMessageHandler;
 import io.vertxrpc0.transport.MessageTransport;
 import java.time.Duration;
 import java.util.Map;
@@ -32,7 +31,6 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
   private final Vertx vertx;
   private final NetServerOptions netServerOptions;
   private Duration keepAliveDuration = Duration.ofMinutes(2);
-  private int maxMsgLen = MarkedLenMessageHandler.DEFAULT_MAX_MSG_LEN;
 
   public Rpc0ServerBuilder(
       @NonNull Vertx vertx,
@@ -45,12 +43,6 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
 
   public Rpc0ServerBuilder(Vertx vertx, NetServerOptions netServerOptions) {
     this(vertx, netServerOptions, Vertx.class.getClassLoader());
-  }
-
-  /** Builds a single {@link Rpc0Server} instance. Equivalent to {@code buildSupplier().get()}. */
-  @Override
-  public Rpc0Server build() {
-    return buildSupplier().get();
   }
 
   /**
@@ -69,6 +61,7 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
    * performed eagerly here, not at supplier-invocation time, so misconfiguration surfaces at the
    * build call site.
    */
+  @Override
   public Supplier<Rpc0Server> buildSupplier() {
     Preconditions.checkArgument(!registry.isEmpty(), "No service has been registered!");
     Map<String, Object> classNameInstanceMap = Maps.newHashMapWithExpectedSize(registry.size());
@@ -80,7 +73,7 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
     KryoRegistry kryoRegistry = getKryoRegistry();
     NetServerOptions opts = netServerOptions;
     Duration keepAlive = keepAliveDuration;
-    int maxLen = maxMsgLen;
+    int maxLen = getMaxMsgLen();
 
     return () -> {
       ServiceLookup lookup = new ServiceLookup(services);
@@ -91,17 +84,6 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
 
   public Rpc0ServerBuilder setKeepAliveDuration(@NonNull Duration keepAliveDuration) {
     this.keepAliveDuration = keepAliveDuration;
-    return this;
-  }
-
-  /**
-   * Sets the maximum length, in bytes, of a single inbound message frame. Frames whose declared
-   * length exceeds this are rejected before their body is buffered, bounding per-connection memory.
-   * Defaults to {@link MarkedLenMessageHandler#DEFAULT_MAX_MSG_LEN}.
-   */
-  public Rpc0ServerBuilder setMaxMsgLen(int maxMsgLen) {
-    Preconditions.checkArgument(maxMsgLen > 0, "maxMsgLen must be positive: %s", maxMsgLen);
-    this.maxMsgLen = maxMsgLen;
     return this;
   }
 
