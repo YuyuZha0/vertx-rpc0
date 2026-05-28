@@ -54,7 +54,7 @@ public final class ServiceFactoryBuilder extends AbstractConfigurator<ServiceFac
         port,
         new NetClientOptions(),
         Duration.ofSeconds(5),
-        Vertx.class.getClassLoader());
+        defaultClassLoader(Vertx.class.getClassLoader()));
   }
 
   public ServiceFactoryBuilder registerService(@NonNull Class<?> serviceType) {

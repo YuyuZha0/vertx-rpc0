@@ -8,6 +8,7 @@ import io.vertxrpc0.kryo.KryoRegistry;
 import io.vertxrpc0.kryo.TrustedTypeKryoRegistry;
 import io.vertxrpc0.transport.MarkedLenMessageHandler;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Set;
 import java.util.function.Consumer;
 import lombok.AccessLevel;
@@ -35,6 +36,13 @@ public abstract class AbstractConfigurator<T extends AbstractConfigurator<T>> {
 
   protected AbstractConfigurator(@NonNull ClassLoader classLoader) {
     this.classLoader = classLoader;
+  }
+
+  // Prefer the thread-context ClassLoader (set by frameworks / isolated Vert.x deployments to the
+  // app CL that can see user @TrustedType classes); fall back only when none is set.
+  protected static ClassLoader defaultClassLoader(ClassLoader fallback) {
+    ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+    return contextClassLoader != null ? contextClassLoader : fallback;
   }
 
   public final T registerType(@NonNull Class<?> type, int typeId) {
@@ -98,7 +106,7 @@ public abstract class AbstractConfigurator<T extends AbstractConfigurator<T>> {
         classInfoSet = ClassPath.from(classLoader).getTopLevelClasses(packageName);
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
     for (ClassPath.ClassInfo classInfo : classInfoSet) {
       Class<?> topLevel = classInfo.load();

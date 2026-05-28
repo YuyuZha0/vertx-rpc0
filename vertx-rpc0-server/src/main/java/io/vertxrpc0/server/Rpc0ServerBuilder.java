@@ -42,7 +42,7 @@ public final class Rpc0ServerBuilder extends AbstractConfigurator<Rpc0ServerBuil
   }
 
   public Rpc0ServerBuilder(Vertx vertx, NetServerOptions netServerOptions) {
-    this(vertx, netServerOptions, Vertx.class.getClassLoader());
+    this(vertx, netServerOptions, defaultClassLoader(Vertx.class.getClassLoader()));
   }
 
   /**
