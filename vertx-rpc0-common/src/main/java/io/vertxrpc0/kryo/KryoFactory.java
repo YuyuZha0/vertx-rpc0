@@ -55,7 +55,9 @@ import lombok.NonNull;
 public final class KryoFactory implements Supplier<Kryo> {
 
   private static final Set<Class<?>> VALUE_TYPES =
-      // ImmutableCollection keep it's insert order
+      // Insertion-ordered: registration ids are positional (see get()), so this iteration order is
+      // part of the wire contract. A HashSet here would assign unstable ids across JVMs/versions
+      // and silently break cross-peer compatibility.
       ImmutableSet.<Class<?>>builder()
           .add(Byte.class)
           .add(Boolean.class)
@@ -109,6 +111,28 @@ public final class KryoFactory implements Supplier<Kryo> {
                     || VALUE_TYPES.contains(componentType))));
   }
 
+  /**
+   * Produces a fully-registered {@link Kryo}. Every instance handed out registers the same classes
+   * in the same order, and that order is part of the wire contract.
+   *
+   * <p>Kryo writes a class's <em>registration id</em> (a varint), not its name, onto the wire. A
+   * class registered without an explicit id gets the next sequential id, so the id is a pure
+   * function of registration order. Two peers interoperate only if they register the same classes
+   * in the same sequence: reorder a single {@code register(...)} call and every id after it shifts
+   * by one, so the receiver decodes id N as the wrong class — silent data corruption or a
+   * ClassCastException, not a clean protocol error. Client and server both build their Kryo through
+   * this factory, so the fixed sequence below is what keeps them in agreement.
+   *
+   * <p>Two consequences this relies on:
+   *
+   * <ul>
+   *   <li>Anything iterated while registering must have a deterministic order — see {@link
+   *       #VALUE_TYPES} (an insertion-ordered ImmutableSet, not a HashSet).
+   *   <li>User {@code @TrustedType} classes are registered last and with <em>explicit</em> ids
+   *       (from {@code typeId}), so they're immune to this ordering and both sides only need to
+   *       agree on each id, not on insertion order.
+   * </ul>
+   */
   @Override
   public Kryo get() {
     Kryo kryo = new SafeKryo();
@@ -128,6 +152,7 @@ public final class KryoFactory implements Supplier<Kryo> {
     kryo.register(Comparator.class, new ComparatorSerializer());
     kryo.register(Object.class);
 
+    // User @TrustedType classes go last, registered with their explicit typeIds — see get().
     registry.registerClasses(kryo);
 
     return kryo;
